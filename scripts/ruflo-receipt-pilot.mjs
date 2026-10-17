@@ -45,20 +45,50 @@ try {
   command(['--version'],45000);
   command(['init'],120000);
   command(['agent','list'],60000);
-  command(['security','scan','--depth','full'],150000);
+  const scanArgs = ['security', 'scan', '--type', 'code', '--depth', 'deep', '--output', 'json'];
+  const scanRun = spawnSync(resolve(cli), scanArgs, {
+    cwd:scratch, env, encoding:'utf8', timeout:150000, maxBuffer:6*1024*1024
+  });
+  if (scanRun.error || (scanRun.status !== 0 && scanRun.status !== 1)) {
+    throw new Error('Security scanner could not complete; exit='+scanRun.status+
+      ', error='+(scanRun.error?.code||'unknown'));
+  }
+  let scanResult;
+  try { scanResult=JSON.parse((scanRun.stdout||'').trim()); }
+  catch { throw new Error('Security scanner did not return valid structured JSON'); }
+  const counts=scanResult?.summary;
+  if (!counts || !Number.isInteger(counts.total) ||
+      !['critical','high','medium','low'].every(k=>Number.isInteger(counts[k]))) {
+    throw new Error('Security scan returned incomplete severity counts');
+  }
+  if (!Array.isArray(scanResult.findings) || scanResult.findings.length!==counts.total) {
+    throw new Error('Security scan finding count is inconsistent');
+  }
+  console.log('RuFlo code pattern scan completed: '+JSON.stringify(counts)+
+    ', exit='+scanRun.status+' (a nonzero result can indicate findings)');
+  const shortFindings=scanResult.findings.filter(f=>f.severity==='critical'||f.severity==='high').slice(0,8);
+  for(const item of shortFindings){
+    const clean=(s)=>String(s||'').replace(/[^a-zA-Z0-9_.\\/ :\\-]/g,'').slice(0,130);
+    console.log('Finding '+clean(item.severity)+': '+clean(item.type)+
+      ' at '+clean(item.location));
+  }
+
   const report=[
     '## RuFlo CLI — Ibbo Receipt AI pilot',
     '',
     '- Pinned source commit: `fa9ff4aecabdaeb05f2be54d4b7d649086d0fdd2`',
     '- RuFlo: `3.56.10` (disposable install)',
     '- Project: `ibboabdoli-ai/Ibbo_Receipt_AI`',
-    '- CLI initialize, agent registry and security scan commands completed without error.',
+    '- CLI init and agent registry: passed.',
+    '- RuFlo code-pattern scan summary: '+JSON.stringify(counts)+'.',
+    '- Scan scope: local secrets and source-code patterns; dependency CVE scan was not performed.',
+    '- Scanner findings are **leads**, not verified security vulnerabilities.',
     '- **This does not establish that all security issues are absent**; findings were not published in CI logs.',
     '- No real agent LLM calls, GitHub write permissions, customer documents, API credentials, database or deployment.',
     '- Source copied into temporary scratch space and deleted after execution.'
   ].join('\n');
   if(process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY,report+'\n');
-  console.log('PASS: RuFlo CLI commands completed on isolated receipt-app copy.');
+  console.log('PASS: RuFlo CLI and structured source scan ran on isolated receipt-app copy; review findings separately.');
 } finally {
   rmSync(root,{recursive:true,force:true});
 }
