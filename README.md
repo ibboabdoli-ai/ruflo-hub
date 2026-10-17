@@ -1,8 +1,8 @@
 # RuFlo Hub — Multi-project starter
 
-> **Status: safe skeleton, NOT a running RuFlo controller.** This repository centralizes reusable project manifests and policies. It does not start agents, fetch repositories, access accounts, or install RuFlo.
+> **Status: safe skeleton, NOT a running RuFlo controller.** This repository centralizes reusable project manifests and policies. It does not start agents, fetch repositories, or access accounts. A separate GitHub Actions smoke test temporarily installs RuFlo in an isolated runner; no persistent runtime is enabled.
 
-[راهنمای فارسی](docs/SETUP.fa.md)
+[راهنمای فارسی](docs/SETUP.fa.md) · [گزارش نصب آزمایشی](docs/RUFLO-LAB.fa.md)
 
 ## Purpose
 
@@ -21,12 +21,12 @@ RuFlo is an external open-source tool: https://github.com/ruvnet/ruflo . This hu
 
 - Versioned project profiles under `profiles/`.
 - Strict offline, read-only policy validation. Write, push, merge, deploy, secrets and even live connections are rejected in the current schema.
-- One GitHub Actions validation job; no secrets, AI API calls or background agent processes.
+- Existing static validation CI plus an isolated GitHub Actions installation smoke test for pinned `ruflo@3.56.10` (verified successful on 2026-10-17; [run](https://github.com/ibboabdoli-ai/ruflo-hub/actions/runs/39072082243)). The latter installs only in a disposable runner and calls no AI provider.
 - A reusable template for onboarding another project.
 
 ## What does NOT work yet
 
-- No runtime integration with RuFlo, Claude Code, Codex or GitHub APIs.
+- No *persistent* RuFlo runtime or integration with Claude Code, Codex or GitHub APIs. A temporary Ruflo CLI smoke test exists, but it does not connect projects.
 - No agent scheduling, automatic code edits, shared runtime memory, dashboards or billing integration.
 - JSON policy validation is *not* an access control around third-party tools. Actual enforcement must be separately implemented and security-reviewed before connecting anything.
 

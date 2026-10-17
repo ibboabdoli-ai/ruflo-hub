@@ -12,7 +12,7 @@ The Hub is a **source-controlled registry**, not an always-on agent runner, cont
 
 ## Initial implementation
 
-Only `npm run validate`, `npm run projects` and `npm test` run locally. The CI workflow checks the static manifest schema. It does not call RuFlo, the GitHub API or an AI API. Connecting it to a runtime is a separate future project requiring explicit owner approval.
+The static configuration CI runs `npm run validate` and `npm test`. A separate opt-in/relevant-push GitHub Actions smoke workflow installs *pinned* `ruflo@3.56.10` in a disposable GitHub runner, checks `--version` and `--help`, then runs `ruflo init` only in a disposable test folder. Both workflows use read-only GitHub permissions; neither uses AI provider credentials. There is no persistent service, no AI agent execution, and no project integration. Connecting a real workspace remains a separate explicitly approved future step.
 
 ## Proposed future topology
 

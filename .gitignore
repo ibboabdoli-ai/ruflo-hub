@@ -8,3 +8,7 @@ node_modules/
 .claude/
 coverage/
 .DS_Store
+.agents/
+.mcp.json
+ruvector.db
+ruvector.db-*
