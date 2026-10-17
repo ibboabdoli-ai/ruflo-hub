@@ -1,0 +1,15 @@
+{
+  "name": "ruflo-hub",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Read-only multi-project registry and reusable policy starter for RuFlo (not a live orchestrator)",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "validate": "node scripts/validate.mjs",
+    "projects": "node scripts/list-projects.mjs",
+    "test": "node --test"
+  }
+}

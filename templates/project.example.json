@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "my-project",
+  "repository": "example-org/my-project",
+  "defaultBranch": "main",
+  "namespace": "project:my-project",
+  "mode": "read_only",
+  "connected": false,
+  "governance": "owner_approval_required",
+  "permissions": {
+    "read": true,
+    "write": false,
+    "commit": false,
+    "push": false,
+    "merge": false,
+    "deploy": false,
+    "manageSecrets": false
+  },
+  "notes": "Replace the repository before moving this example into profiles/."
+}

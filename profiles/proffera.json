@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "proffera",
+  "repository": "ibboabdoli-ai/Proffera",
+  "defaultBranch": "main",
+  "namespace": "project:proffera",
+  "mode": "read_only",
+  "connected": false,
+  "governance": "existing_supervisor",
+  "permissions": {
+    "read": true,
+    "write": false,
+    "commit": false,
+    "push": false,
+    "merge": false,
+    "deploy": false,
+    "manageSecrets": false
+  },
+  "notes": "Placeholder only. Proffera Supervisor and its exact-head review, owner approval and production gates remain authoritative."
+}
