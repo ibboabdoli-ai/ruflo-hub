@@ -62,3 +62,12 @@ This repository is public by owner choice. Do not put secrets, unpublished custo
 4. Only then consider dedicated integration adapters and explicit per-project authorization.
 
 For architecture and security boundaries see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## Run from GitHub (manual control)
+
+The [RuFlo Hub control](https://github.com/ibboabdoli-ai/ruflo-hub/actions/workflows/ruflo-control.yml) workflow provides two explicit choices:
+
+- **status**: inspect public, disconnected project profiles and current read-only policy; no Ruflo binary or external repository is executed.
+- **installation-smoke** (hub only): install pinned RuFlo 3.56.10 and test `ruflo init` in a disposable GitHub-hosted VM. The runner is discarded when the job finishes.
+
+To use it: open **Actions → RuFlo Hub control (manual) → Run workflow**, select `status` / `installation-smoke`, and check the run summary. No API secrets, per-project access or production rights are configured. **This is NOT a 24/7 agent server.**
