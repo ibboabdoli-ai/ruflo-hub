@@ -16,7 +16,7 @@ if (profiles.length === 0 || profiles.some(entry => entry.issues.length)) {
   process.exit(2);
 }
 if (project !== 'hub' && !profiles.some(entry => entry.profile.id === project)) {
-  console.error('Selected project is not configured.');
+  console.error('Unknown project: selected project is not configured.');
   process.exit(2);
 }
 
