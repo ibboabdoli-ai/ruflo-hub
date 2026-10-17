@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "ibbo-receipt-ai",
+  "repository": "ibboabdoli-ai/Ibbo_Receipt_AI",
+  "defaultBranch": "main",
+  "namespace": "project:ibbo-receipt-ai",
+  "mode": "read_only",
+  "connected": false,
+  "governance": "owner_approval_required",
+  "permissions": {
+    "read": true,
+    "write": false,
+    "commit": false,
+    "push": false,
+    "merge": false,
+    "deploy": false,
+    "manageSecrets": false
+  },
+  "notes": "Pilot runs only in GitHub temporary runner on pinned public source SHA. No database, private blobs or AI API access."
+}

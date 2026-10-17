@@ -71,3 +71,7 @@ The [RuFlo Hub control](https://github.com/ibboabdoli-ai/ruflo-hub/actions/workf
 - **installation-smoke** (hub only): install pinned RuFlo 3.56.10 and test `ruflo init` in a disposable GitHub-hosted VM. The runner is discarded when the job finishes.
 
 To use it: open **Actions → RuFlo Hub control (manual) → Run workflow**, select `status` / `installation-smoke`, and check the run summary. No API secrets, per-project access or production rights are configured. **This is NOT a 24/7 agent server.**
+
+## Read-only project pilot: Ibbo Receipt AI
+
+[Run the isolated Receipt AI pilot](https://github.com/ibboabdoli-ai/ruflo-hub/actions/workflows/ruflo-receipt-pilot.yml) to test the pinned RuFlo CLI security scanner and run this public repository's unit tests, type checking and lint on a pinned commit without AI provider keys. This does **not** mean live multi-agent LLM review is enabled. See [pilot scope](docs/RECEIPT-PILOT.fa.md).

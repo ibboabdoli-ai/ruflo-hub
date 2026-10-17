@@ -5,10 +5,6 @@ if (!['status', 'installation-smoke'].includes(operation)) {
   console.error('Unknown operation. Use status or installation-smoke.');
   process.exit(2);
 }
-if (!['hub', 'proffera'].includes(project)) {
-  console.error('Unknown project. Only hub and proffera are registered in this control.');
-  process.exit(2);
-}
 if (operation === 'installation-smoke' && project !== 'hub') {
   console.error('Installation smoke is allowed only in the disposable hub sandbox, not an external project.');
   process.exit(2);

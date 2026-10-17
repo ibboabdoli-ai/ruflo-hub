@@ -18,6 +18,7 @@ on:
         options:
           - hub
           - proffera
+          - ibbo-receipt-ai
         default: hub
   push:
     paths:
