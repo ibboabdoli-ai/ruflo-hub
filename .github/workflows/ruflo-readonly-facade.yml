@@ -4,7 +4,7 @@ on:
     branches: [work/ruflo-three-agent-lab-20261018]
     paths:
       - scripts/ruflo-readonly-facade.mjs
-      - scripts/ruflo-readonly-facade-test.mjs
+      - scripts/ruflo-readonly-facade-smoke.mjs
       - .github/workflows/ruflo-readonly-facade.yml
 permissions:
   contents: read
@@ -33,7 +33,7 @@ jobs:
       - name: Validate scripts and local hub policies
         run: |
           node --check scripts/ruflo-readonly-facade.mjs
-          node --check scripts/ruflo-readonly-facade-test.mjs
+          node --check scripts/ruflo-readonly-facade-smoke.mjs
           npm run validate
           npm test
       - name: Install pinned RuFlo without lifecycle scripts
@@ -43,7 +43,7 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/ruflo" --no-save --ignore-scripts --no-audit --no-fund "ruflo@$RUFLO_VERSION"
           echo "RUFLO_BIN=$RUNNER_TEMP/ruflo/node_modules/.bin/ruflo" >> "$GITHUB_ENV"
       - name: Verify facade enforces one read-only native RuFlo lookup
-        run: node scripts/ruflo-readonly-facade-test.mjs
+        run: node scripts/ruflo-readonly-facade-smoke.mjs
       - name: Verify no repository modifications
         run: |
           git diff --exit-code
