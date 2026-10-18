@@ -57,11 +57,14 @@ try{
   console.log('Agent registry returned '+list.length+' characters');
   // Deliberately print only this no-secret CLI metadata from a disposable instance.
   console.log('Agent list (isolated, no provider keys): '+list.slice(0,2500));
-  const found=roles.filter(role=>list.toLowerCase().includes(role.name));
+  // RuFlo 3.56.10's CLI table lists types and truncated IDs, not names.
+  const found=roles.filter(role=>new RegExp('\\\\|\\\\s*'+role.type+'\\\\s*\\\\|','i').test(list));
+  const totalMatch=/Total:\\s*(\\d+) agents?/i.exec(list);
+  const actualTotal=totalMatch?Number(totalMatch[1]):-1;
   summary.push('Swarm initialization: PASS.');
   summary.push('Agent spawn calls succeeded: '+roles.length+'/3.');
-  summary.push('Agent names visible in registry: '+found.length+'/3.');
-  if(found.length!==roles.length) throw Error('Spawn returned success but not all expected agents appear in registry: '+found.map(x=>x.name).join(','));
+  summary.push('Agent types visible in registry: '+found.length+'/3; total='+actualTotal+'.');
+  if(found.length!==roles.length || actualTotal!==3) throw Error('Agent registry does not show all three role types; observed total='+actualTotal);
   summary.push('');
   summary.push('**This verifies CLI swarm/agent registration, not intelligence, communication, task execution, self-repair, or spending.**');
   console.log('PASS: three agents registered in disposable RuFlo instance with no LLM keys');
