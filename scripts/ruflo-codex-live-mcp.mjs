@@ -3,6 +3,8 @@ import {mkdirSync,mkdtempSync,rmSync,existsSync,appendFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 
+// One model session, allowed only after zero-cost app-server confirmed a connected
+// MCP thread with exactly one read-only tool on this exact pinned source.
 const safeBranch='refs/heads/work/ruflo-three-agent-lab-20261018';
 if(process.env.GITHUB_REPOSITORY!=='ibboabdoli-ai/ruflo-hub'||
   process.env.GITHUB_REF!==safeBranch)throw Error('Refusing outside dedicated RuFlo sandbox branch');
