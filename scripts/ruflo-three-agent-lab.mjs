@@ -58,9 +58,8 @@ try{
   // Deliberately print only this no-secret CLI metadata from a disposable instance.
   console.log('Agent list (isolated, no provider keys): '+list.slice(0,2500));
   // RuFlo 3.56.10's CLI table lists types and truncated IDs, not names.
-  const found=roles.filter(role=>new RegExp('\\\\|\\\\s*'+role.type+'\\\\s*\\\\|','i').test(list));
-  const totalMatch=/Total:\\s*(\\d+) agents?/i.exec(list);
-  const actualTotal=totalMatch?Number(totalMatch[1]):-1;
+  const found=roles.filter(role=>list.includes('| '+role.type+' |'));
+  const actualTotal=list.includes('Total: 3 agents') ? 3 : -1;
   summary.push('Swarm initialization: PASS.');
   summary.push('Agent spawn calls succeeded: '+roles.length+'/3.');
   summary.push('Agent types visible in registry: '+found.length+'/3; total='+actualTotal+'.');
