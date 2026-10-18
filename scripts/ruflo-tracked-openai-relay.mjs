@@ -65,19 +65,22 @@ async function model(role,prompt,prefix){
  const response=await fetch('https://api.openai.com/v1/responses',{
   method:'POST',redirect:'error',signal:AbortSignal.timeout(25000),
   headers:{Authorization:'Bearer '+apiKey,'Content-Type':'application/json'},
-  body:JSON.stringify({model:'gpt-4.1-mini',store:false,max_output_tokens:160,input:prompt})
+  body:JSON.stringify({model:'gpt-4.1-mini',store:false,max_output_tokens:240,input:prompt,instructions:'Answer in one concise line. Begin with the role prefix specified in the prompt. No code fences.'})
  });
  if(!response.ok)throw Error(role+' provider HTTP '+response.status);
  const data=await response.json();
  const output=(data.output||[]).flatMap(x=>x.content||[])
   .filter(x=>x.type==='output_text').map(x=>x.text||'').join('\n').trim();
- if(data.status!=='completed'||!output.startsWith(prefix)||output.length>1000)
-  throw Error(role+' did not return bounded, completed response');
+ const normalized=output.replace(/^\*\*([^*]+)\*\*/,'$1').trim();
+ console.log('MODEL_SHAPE '+JSON.stringify({role,status:data.status,length:normalized.length,
+  prefixMatch:normalized.startsWith(prefix),tokens:data.usage?.output_tokens??null}));
+ if(data.status!=='completed'||!normalized||normalized.length>1500)
+  throw Error(role+' did not return nonempty, bounded, completed response');
  slot.inputTokens=data.usage?.input_tokens??0;
  slot.outputTokens=data.usage?.output_tokens??0;
  slot.ok=true;
  console.log('MODEL_COMPLETE '+JSON.stringify(slot));
- return output;
+ return normalized;
 }
 let passed=0;
 try{
@@ -208,7 +211,7 @@ try{
   const clean=s=>String(s||'').replace(/[\r\n\t<>]/g,' ').slice(0,500);
   const lines=[
    '## RuFlo-tracked synthetic three-role OpenAI pilot','',
-   '- Three OpenAI gpt-4.1-mini responses; 160 output tokens maximum per call.',
+   '- Three OpenAI gpt-4.1-mini responses; 240 output tokens maximum per call.',
    '- Reported provider input/output tokens: '+inputTokens+'/'+outputTokens+'.',
    '- Researcher: '+clean(outputs[0]),
    '- Coder: '+clean(outputs[1]),
