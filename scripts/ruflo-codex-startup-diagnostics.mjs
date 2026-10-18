@@ -42,10 +42,11 @@ function summarize(value){
       fields:Object.keys(r).slice(0,15),
       toolNames:(Array.isArray(r.tools)?r.tools:
         Array.isArray(r.tools?.tools)?r.tools.tools:
-        Array.isArray(r.tools?.data)?r.tools.data:[]).map(t=>t.name).slice(0,10),
+        Array.isArray(r.tools?.data)?r.tools.data:[]).map(t=>t.name).concat(r.tools&&typeof r.tools==='object'&&!Array.isArray(r.tools)&&!Array.isArray(r.tools?.data)&&!Array.isArray(r.tools?.tools)?Object.keys(r.tools):[]).slice(0,10),
       toolCount:Array.isArray(r.tools)?r.tools.length:
         Array.isArray(r.tools?.tools)?r.tools.tools.length:
-        Array.isArray(r.tools?.data)?r.tools.data.length:null,
+        Array.isArray(r.tools?.data)?r.tools.data.length:
+        r.tools&&typeof r.tools==='object'?Object.keys(r.tools).length:null,
       toolFields:r.tools&&typeof r.tools==='object'&&!Array.isArray(r.tools)?Object.keys(r.tools).slice(0,12):[],
       toolShape:Array.isArray(r.tools)?'array':
         (r.tools&&typeof r.tools==='object'?'object':typeof r.tools),
