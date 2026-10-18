@@ -39,8 +39,13 @@ function summarize(value){
     keys:Object.keys(result),
     rows:rows.map(r=>({
       name:r.name||r.serverName||r.id||null,
-      toolNames:(r.tools||[]).map(t=>t.name).slice(0,10),
-      toolCount:Array.isArray(r.tools)?r.tools.length:null,
+      fields:Object.keys(r).slice(0,15),
+      toolNames:(Array.isArray(r.tools)?r.tools:
+        Array.isArray(r.tools?.tools)?r.tools.tools:[]).map(t=>t.name).slice(0,10),
+      toolCount:Array.isArray(r.tools)?r.tools.length:
+        Array.isArray(r.tools?.tools)?r.tools.tools.length:null,
+      toolShape:Array.isArray(r.tools)?'array':
+        (r.tools&&typeof r.tools==='object'?'object':typeof r.tools),
       status:r.status?.state||r.status||r.startupStatus||null,
       error:r.error?String(r.error).slice(0,250):null
     })).slice(0,10)
