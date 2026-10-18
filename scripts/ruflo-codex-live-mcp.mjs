@@ -8,7 +8,8 @@ if(process.env.GITHUB_REPOSITORY!=='ibboabdoli-ai/ruflo-hub'||
   process.env.GITHUB_REF!==safeBranch)throw Error('Refusing outside dedicated RuFlo sandbox branch');
 const key=process.env.OPENAI_API_KEY;
 const codex=process.env.CODEX_BIN,ruflo=process.env.RUFLO_BIN;
-if(!key||key.length<20||!existsSync(codex||'')||!existsSync(ruflo||''))
+const facade=resolve('scripts/ruflo-readonly-facade.mjs');
+if(!key||key.length<20||!existsSync(codex||'')||!existsSync(ruflo||'')||!existsSync(facade))
  throw Error('API key or pinned binaries missing');
 const root=mkdtempSync(join(tmpdir(),'ruflo-codex-live-'));
 const cwd=join(root,'scratch'),home=join(root,'home'),cHome=join(root,'codex');
@@ -24,30 +25,27 @@ function safeRun(args,env,timeout){
  return p;
 }
 try{
- const reg=safeRun(['mcp','add','ruflo','--','/usr/bin/env',
-    '-u','CODEX_API_KEY','-u','OPENAI_API_KEY',resolve(ruflo),'mcp','start'],
+ const reg=safeRun(['mcp','add','ruflo_safe','--',process.execPath,facade],
     {...base,CODEX_API_KEY:''},20000);
  if(reg.error||reg.status!==0)throw Error('Could not register scrubbed Ruflo MCP in isolated Codex');
  const list=safeRun(['mcp','list'],{...base,CODEX_API_KEY:''},20000);
- if(list.status!==0||!list.stdout.includes('ruflo'))throw Error('Codex MCP config absent');
+ if(list.status!==0||!list.stdout.includes('ruflo_safe'))throw Error('Codex MCP config absent');
 
  // Exactly one Codex session, with an independent timeout, no file writes.
  // The code intentionally does not dump Codex stdout or stderr to public logs.
  const prompt=[
   'This is a completely synthetic security-lab experiment.',
-  'Use the connected ruflo MCP server once, calling its agent_list tool.',
+  'Use the connected ruflo_safe MCP server exactly once. Call its ruflo_read_agent_count tool with empty arguments.',
   'Do not use shell, internet browsing, or file tools.',
   'Do not start a real task or spawn background agents.',
-  'Only after the tool result, answer one sentence beginning STATUS: and state the observed agent registry status.',
-  'If ruflo MCP is unavailable, begin STATUS: UNAVAILABLE and do not fabricate a tool result.'
+  'After the tool result, answer one sentence beginning STATUS: and report the observed count. Do not guess.',
+  'If the tool fails, answer STATUS: UNAVAILABLE, and do not fabricate the count.'
  ].join(' ');
  const args=['exec','--json','--sandbox','read-only','--skip-git-repo-check',
    '--ephemeral','--model','gpt-5.6-luna',
    '-c','model_reasoning_effort="low"',
-   '-c','approval_policy="on-request"',
-   '-c','mcp_servers.ruflo.enabled_tools=["agent_list"]',
-   '-c','mcp_servers.ruflo.default_tools_approval_mode="auto"',
-   '-c','mcp_servers.ruflo.tools.agent_list.approval_mode="auto"',
+   '-c','approval_policy="never"',
+   '-c','mcp_servers.ruflo_safe.enabled_tools=["ruflo_read_agent_count"]',
    prompt];
  const before=Date.now();
  const result=safeRun(args,{...base,CODEX_API_KEY:key},105000);
@@ -62,11 +60,11 @@ try{
   server:e.item?.server||e.item?.server_name||null,
   tool:e.item?.tool||e.item?.name||e.item?.tool_name||null,
   state:e.item?.status||null}));
- const toolHit=observed.some(x=>String(x.tool||'').includes('agent_list') &&
-   (String(x.server||'').includes('ruflo')||x.server===null) && x.state==='completed');
+ const toolHit=observed.some(x=>String(x.tool||'').includes('ruflo_read_agent_count') &&
+   (String(x.server||'').includes('ruflo_safe')||x.server===null) && x.state==='completed');
  const summaryEvent=events.filter(x=>x.type==='turn.completed').at(-1);
  const usage=summaryEvent?.usage||summaryEvent?.turn?.usage||null;
- console.log('Codex run limited to one explicit approved read-only RuFlo tool.');
+ console.log('Codex run exposes only annotated read-only ruflo_read_agent_count via strict local facade.');
  console.log('Codex: exit='+result.status+' elapsedMs='+elapsedMs+
    ' events='+events.length+' mcpToolEvents='+calls.length);
  console.log('Observed Ruflo MCP tool events: '+JSON.stringify(observed.slice(0,12)));
@@ -77,14 +75,14 @@ try{
  if(usage)console.log('Codex provider-reported usage: '+JSON.stringify(usage).slice(0,700));
  if(result.error)console.log('Codex process termination: '+String(result.error.code||'unknown'));
  const ok=result.status===0 && toolHit;
- console.log(ok?'PASS: Codex successfully completed Ruflo agent_list via native MCP.':
-   'INCOMPLETE: no proven successful native Codex->RuFlo agent_list invocation.');
+ console.log(ok?'PASS: Codex completed annotated read-only facade -> Ruflo agent_list via native MCP.':
+   'INCOMPLETE: no completed native Codex->RuFlo read-only facade invocation.');
  if(process.env.GITHUB_STEP_SUMMARY)appendFileSync(process.env.GITHUB_STEP_SUMMARY,
    '## Codex -> RuFlo native MCP tool-use test\n\n'+
    '- Model: gpt-5.6-luna, reasoning low; exactly one bounded Codex session.\n'+
    '- Runtime: '+elapsedMs+' milliseconds; exit '+result.status+'.\n'+
    '- Observed MCP calls: '+JSON.stringify(observed.slice(0,6))+'\n'+
-   '- Proven successful RuFlo agent_list call: '+(ok?'YES':'NO')+'.\n'+
+   '- Proven completed annotated facade call: '+(ok?'YES':'NO')+'.\n'+
    '- Codex usage: '+JSON.stringify(usage||'not reported')+'.\n'+
    '- Sandbox read-only, no repository changes, no Production connections.\n');
  if(!ok)process.exitCode=1;

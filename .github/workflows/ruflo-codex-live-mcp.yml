@@ -44,7 +44,7 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/codex" --no-save --ignore-scripts --no-audit --no-fund "@openai/codex@$CODEX_VERSION"
           echo "RUFLO_BIN=$RUNNER_TEMP/ruflo/node_modules/.bin/ruflo" >> "$GITHUB_ENV"
           echo "CODEX_BIN=$RUNNER_TEMP/codex/node_modules/.bin/codex" >> "$GITHUB_ENV"
-      - name: Run one paid, time-bounded Codex MCP tool test
+      - name: Run one bounded Codex MCP tool test against strict read-only facade
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: node scripts/ruflo-codex-live-mcp.mjs
