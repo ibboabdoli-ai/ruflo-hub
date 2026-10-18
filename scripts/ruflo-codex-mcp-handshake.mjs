@@ -69,6 +69,18 @@ try{
  const listed=spawnSync(resolve(codex),['mcp','list'],{cwd,env,encoding:'utf8',timeout:20000});
  if(listed.status!==0||listed.error||!listed.stdout.includes('ruflo'))throw Error('Codex CLI MCP registry missing Ruflo');
  console.log('PASS: Codex CLI registered Ruflo stdio MCP server in disposable CODEX_HOME');
+ const facade=resolve(new URL('./ruflo-readonly-facade.mjs',import.meta.url).pathname);
+ if(!existsSync(facade))throw Error('Read-only facade script missing');
+ const addFacade=spawnSync(resolve(codex),['mcp','add','ruflo_safe','--',process.execPath,facade],{cwd,env,encoding:'utf8',timeout:20000});
+ if(addFacade.status!==0||addFacade.error)throw Error('Codex could not register annotated facade');
+ const getFacade=spawnSync(resolve(codex),['mcp','get','ruflo_safe','--json'],{cwd,env,encoding:'utf8',timeout:20000});
+ if(getFacade.status!==0||getFacade.error)throw Error('Codex could not inspect annotated facade');
+ let parsed;try{parsed=JSON.parse(getFacade.stdout)}catch{throw Error('Codex MCP get was not JSON')}
+ if(parsed.enabled===false||!JSON.stringify(parsed.transport||parsed).includes(facade)){
+   throw Error('Codex MCP facade transport does not match the intended script');
+ }
+ console.log('PASS: Codex MCP get confirms registered enabled facade launcher in disposable CODEX_HOME');
+
  if(process.env.GITHUB_STEP_SUMMARY)appendFileSync(process.env.GITHUB_STEP_SUMMARY,
    '## Native Codex / RuFlo MCP no-key verification\n\n'+
    '- MCP initialize: PASS.\n- MCP tools/list: '+names.length+' tools.\n'+
