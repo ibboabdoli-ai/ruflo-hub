@@ -150,6 +150,17 @@ try{
    message:String(attempt.data?.error||attempt.data?.message||'').slice(0,280)}));
  if(!denied)throw Error('Unexpected agent_execute success without credentials; do not claim isolation');
  passed++;
+ for(let i=0;i<3;i++){
+  const completed=await tool('task_complete',{taskId:tasks[i],
+   result:'Synthetic offline completion marker for '+roles[i]+'. No model call made.'});
+  console.log('TASK_COMPLETE '+JSON.stringify({...summary('task_complete',completed),role:roles[i]}));
+  if(completed.isError||completed.data?.success===false)throw Error('Task completion rejected at '+i);
+  const checked=await tool('task_status',{taskId:tasks[i]});
+  console.log('TASK_VERIFY '+JSON.stringify({...summary('task_status',checked),role:roles[i]}));
+  if(checked.isError||checked.data?.status!=='completed')
+    throw Error('Task completion state did not persist at '+i);
+ }
+ passed++;
  const tasksNow=await tool('task_list',{limit:20});
  console.log('TASK_LIST '+JSON.stringify({...summary('task_list',tasksNow),
   taskCount:tasksNow.data?.tasks?.length??null}));
