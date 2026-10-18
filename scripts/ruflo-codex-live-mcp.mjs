@@ -25,7 +25,7 @@ function safeRun(args,env,timeout){
  return p;
 }
 try{
- const reg=safeRun(['mcp','add','ruflo_safe','--',process.execPath,facade],
+ const reg=safeRun(['mcp','add','ruflo_safe','--env','RUFLO_BIN='+ruflo,'--',process.execPath,facade],
     {...base,CODEX_API_KEY:''},20000);
  if(reg.error||reg.status!==0)throw Error('Could not register scrubbed Ruflo MCP in isolated Codex');
  const list=safeRun(['mcp','list'],{...base,CODEX_API_KEY:''},20000);

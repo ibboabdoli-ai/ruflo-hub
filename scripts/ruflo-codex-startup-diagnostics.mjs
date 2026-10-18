@@ -56,7 +56,7 @@ function summarize(value){
   };
 }
 try{
-  const reg=spawnSync(resolve(codex),['mcp','add','ruflo_safe','--',process.execPath,scriptPath],{
+  const reg=spawnSync(resolve(codex),['mcp','add','ruflo_safe','--env','RUFLO_BIN='+ruflo,'--',process.execPath,scriptPath],{
     cwd,env,encoding:'utf8',timeout:20000});
   if(reg.status!==0||reg.error)throw Error('Could not register safe facade');
   const conf=spawnSync(resolve(codex),['mcp','get','ruflo_safe','--json'],{
