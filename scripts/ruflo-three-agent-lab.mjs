@@ -51,10 +51,12 @@ try{
   ];
   for(const role of roles){
     const out=run(['agent','spawn','--type',role.type,'--name',role.name],50000);
-    console.log('Agent spawn '+role.type+' returned '+out.length+' characters');
+    console.log('Agent spawn '+role.type+' metadata: '+out.slice(0,1200));
   }
   const list=run(['agent','list'],60000);
   console.log('Agent registry returned '+list.length+' characters');
+  // Deliberately print only this no-secret CLI metadata from a disposable instance.
+  console.log('Agent list (isolated, no provider keys): '+list.slice(0,2500));
   const found=roles.filter(role=>list.toLowerCase().includes(role.name));
   summary.push('Swarm initialization: PASS.');
   summary.push('Agent spawn calls succeeded: '+roles.length+'/3.');
