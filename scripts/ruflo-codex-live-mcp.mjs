@@ -35,7 +35,7 @@ try{
  // The code intentionally does not dump Codex stdout or stderr to public logs.
  const prompt=[
   'This is a completely synthetic security-lab experiment.',
-  'Use the connected ruflo_safe MCP server exactly once. Call its ruflo_read_agent_count tool with empty arguments.',
+  'Find the sole connected ruflo_safe MCP tool named ruflo_read_agent_count and CALL IT exactly once with empty arguments. Use the tool result, not your memory.',
   'Do not use shell, internet browsing, or file tools.',
   'Do not start a real task or spawn background agents.',
   'After the tool result, answer one sentence beginning STATUS: and report the observed count. Do not guess.',
@@ -45,7 +45,6 @@ try{
    '--ephemeral','--model','gpt-5.6-luna',
    '-c','model_reasoning_effort="low"',
    '-c','approval_policy="never"',
-   '-c','mcp_servers.ruflo_safe.enabled_tools=["ruflo_read_agent_count"]',
    prompt];
  const before=Date.now();
  const result=safeRun(args,{...base,CODEX_API_KEY:key},105000);
@@ -68,6 +67,11 @@ try{
  console.log('Codex: exit='+result.status+' elapsedMs='+elapsedMs+
    ' events='+events.length+' mcpToolEvents='+calls.length);
  console.log('Observed Ruflo MCP tool events: '+JSON.stringify(observed.slice(0,12)));
+ console.log('Codex event types: '+JSON.stringify(events.map(e=>({event:e.type,item:e.item?.type||null}))));
+ const messages=events.filter(e=>e.item?.type==='agent_message').map(e=>String(e.item?.text||'')).filter(Boolean);
+ const excerpt=messages.at(-1)?.replaceAll(key,'[redacted]').slice(0,600)||'none';
+ console.log('Codex sanitized final message: '+excerpt);
+
  console.log('MCP item error diagnostics: '+JSON.stringify(calls.filter(e=>e.item?.status==='failed').slice(0,2).map(e=>({
   message:String(e.item?.error?.message||e.item?.error||e.item?.result||'not provided')
     .replace(/sk-[A-Za-z0-9_-]{8,}/g,'[redacted]').slice(0,300)
