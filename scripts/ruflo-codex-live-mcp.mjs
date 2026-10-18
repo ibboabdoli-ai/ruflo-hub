@@ -44,6 +44,7 @@ try{
  const args=['exec','--json','--sandbox','read-only','--skip-git-repo-check',
    '--ephemeral','--model','gpt-5.6-luna',
    '-c','model_reasoning_effort="low"',
+   '-c','approval_policy="on-request"',
    '-c','mcp_servers.ruflo.enabled_tools=["agent_list"]',
    '-c','mcp_servers.ruflo.default_tools_approval_mode="auto"',
    '-c','mcp_servers.ruflo.tools.agent_list.approval_mode="auto"',
