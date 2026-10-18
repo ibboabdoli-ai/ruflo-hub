@@ -1,6 +1,7 @@
 import {spawn} from 'node:child_process';
 import {existsSync,mkdtempSync,mkdirSync,rmSync,appendFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
+import {createBoundedOpenAIClient,HYBRID_ROLES,HYBRID_LIMITS} from '../lib/hybrid-openai.mjs';
 import {join,resolve} from 'node:path';
 
 const ruflo=process.env.RUFLO_BIN;
@@ -57,30 +58,16 @@ const apiKey=process.env.OPENAI_API_KEY;
 if(!apiKey||apiKey.length<20)throw Error('Dedicated OpenAI API key secret not available');
 const fixture='function average(a){return a.reduce((s,x)=>s+x,0)/a.length}';
 const generated=[];
+const boundedClient=createBoundedOpenAIClient({apiKey});
 async function model(role,prompt,prefix){
- if(generated.length>=3)throw Error('Maximum three calls exceeded');
- if(prompt.length>1500)throw Error('Oversized synthetic prompt');
- const slot={role,inputTokens:0,outputTokens:0,ok:false};
- generated.push(slot); // records attempted calls before network
- const response=await fetch('https://api.openai.com/v1/responses',{
-  method:'POST',redirect:'error',signal:AbortSignal.timeout(25000),
-  headers:{Authorization:'Bearer '+apiKey,'Content-Type':'application/json'},
-  body:JSON.stringify({model:'gpt-4.1-mini',store:false,max_output_tokens:240,input:prompt,instructions:'Answer in one concise line. Begin with the role prefix specified in the prompt. No code fences.'})
- });
- if(!response.ok)throw Error(role+' provider HTTP '+response.status);
- const data=await response.json();
- const output=(data.output||[]).flatMap(x=>x.content||[])
-  .filter(x=>x.type==='output_text').map(x=>x.text||'').join('\n').trim();
- const normalized=output.replace(/^\*\*([^*]+)\*\*/,'$1').trim();
- console.log('MODEL_SHAPE '+JSON.stringify({role,status:data.status,length:normalized.length,
-  prefixMatch:normalized.startsWith(prefix),tokens:data.usage?.output_tokens??null}));
- if(data.status!=='completed'||!normalized||normalized.length>1500)
-  throw Error(role+' did not return nonempty, bounded, completed response');
- slot.inputTokens=data.usage?.input_tokens??0;
- slot.outputTokens=data.usage?.output_tokens??0;
- slot.ok=true;
+ const outcome=await boundedClient.generate(role,prompt,prefix);
+ const slot={role,inputTokens:outcome.usage.inputTokens??0,
+  outputTokens:outcome.usage.outputTokens??0,ok:true};
+ generated.push(slot);
+ console.log('MODEL_SHAPE '+JSON.stringify({role,length:outcome.text.length,
+  prefixMatch:outcome.prefixMatch,outputTokens:outcome.usage.outputTokens}));
  console.log('MODEL_COMPLETE '+JSON.stringify(slot));
- return normalized;
+ return outcome.text;
 }
 let passed=0;
 try{
@@ -117,7 +104,7 @@ try{
  if(swarm.isError||swarm.data?.success===false)throw Error('Native swarm initialization failed');
  const swarmId=idOf(swarm.data,'swarm');
  passed++;
- const roles=['researcher','coder','tester'];
+ const roles=HYBRID_ROLES;
  const ids=[];
  for(const role of roles){
   const result=await tool('agent_spawn',{agentType:role,swarmId,
@@ -211,7 +198,7 @@ try{
   const clean=s=>String(s||'').replace(/[\r\n\t<>]/g,' ').slice(0,500);
   const lines=[
    '## RuFlo-tracked synthetic three-role OpenAI pilot','',
-   '- Three OpenAI gpt-4.1-mini responses; 240 output tokens maximum per call.',
+   '- Three OpenAI '+HYBRID_LIMITS.model+' responses; '+HYBRID_LIMITS.maxOutputTokens+' output tokens maximum per call.',
    '- Reported provider input/output tokens: '+inputTokens+'/'+outputTokens+'.',
    '- Researcher: '+clean(outputs[0]),
    '- Coder: '+clean(outputs[1]),
