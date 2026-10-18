@@ -11,7 +11,8 @@ jobs:
   one-native-tool:
     if: >-
       github.repository == 'ibboabdoli-ai/ruflo-hub' &&
-      github.ref == 'refs/heads/work/ruflo-three-agent-lab-20261018'
+      github.ref == 'refs/heads/work/ruflo-three-agent-lab-20261018' &&
+      contains(github.event.head_commit.message, '[run-paid-codex-test]')
     runs-on: ubuntu-latest
     timeout-minutes: 8
     env:
