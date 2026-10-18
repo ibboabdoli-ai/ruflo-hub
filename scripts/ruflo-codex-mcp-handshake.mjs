@@ -51,6 +51,16 @@ try{
  const tools=await request('tools/list',{});
  if(!Array.isArray(tools?.tools)||tools.tools.length===0)throw Error('No MCP tools discoverable');
  const names=tools.tools.map(x=>x.name);
+ const show=names.filter(x=>['swarm_status','swarm_init','agent_list'].includes(x));
+ console.log('Relevant MCP schemas: '+JSON.stringify(tools.tools.filter(x=>show.includes(x.name)).map(x=>({name:x.name,required:x.inputSchema?.required||[],fields:Object.keys(x.inputSchema?.properties||{})}))));
+ for(const name of ['swarm_status','agent_list']){
+   if(!names.includes(name)){console.log('MCP diagnostic '+name+': unavailable');continue}
+   try{
+     const out=await request('tools/call',{name,arguments:{}});
+     const preview=(out?.content||[]).map(x=>x.text||'').join(' ').replace(/sk-[A-Za-z0-9_-]+/g,'[redacted]').slice(0,380);
+     console.log('MCP direct '+name+': isError='+Boolean(out?.isError)+' text='+preview);
+   }catch(e){console.log('MCP direct '+name+' threw '+String(e.message).slice(0,220));}
+ }
  console.log('PASS: MCP live initialize; server='+initialized.serverInfo.name+' protocol='+initialized.protocolVersion);
  console.log('PASS: MCP tools/list returned '+names.length+' tools');
  console.log('Known coordination names available: '+names.filter(n=>/^(swarm|agent|task|memory)_/.test(n)).slice(0,30).join(', '));
