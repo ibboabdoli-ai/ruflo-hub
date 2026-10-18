@@ -66,7 +66,7 @@ try{
  const summaryEvent=events.filter(x=>x.type==='turn.completed').at(-1);
  const usage=summaryEvent?.usage||summaryEvent?.turn?.usage||null;
  console.log('Codex run limited to one explicit approved read-only RuFlo tool.');
- console.log('Codex: exit='+result.status' elapsedMs='+elapsedMs+
+ console.log('Codex: exit='+result.status+' elapsedMs='+elapsedMs+
    ' events='+events.length+' mcpToolEvents='+calls.length);
  console.log('Observed Ruflo MCP tool events: '+JSON.stringify(observed.slice(0,12)));
  console.log('MCP item error diagnostics: '+JSON.stringify(calls.filter(e=>e.item?.status==='failed').slice(0,2).map(e=>({
