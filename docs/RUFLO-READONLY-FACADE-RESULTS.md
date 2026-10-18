@@ -1,3 +1,17 @@
+# Update — 2026-10-18: Native Codex → RuFlo read-only tool execution PASS
+
+**Resolved root cause:** Codex sanitizes the subprocess environment for stdio MCP servers. The strict `ruflo_safe` facade required the non-secret absolute RuFlo executable location (`RUFLO_BIN`) on startup. Earlier `codex mcp get` succeeded because it examined stored configuration, but the actual server process exited before completing the `initialize` handshake. A zero-cost `codex app-server` startup probe captured the real error, `connection closed: initialize response`. Adding `--env RUFLO_BIN=<installed RuFlo binary>` to the scoped `codex mcp add` fixed the startup.
+
+**No-cost verification:** [GitHub run 39169095885](https://github.com/ibboabdoli-ai/ruflo-hub/actions/runs/39169095885) confirmed `mcpServerStatus/list` reported `ruflo_safe` as **connected** in a real ephemeral Codex thread, with exactly one tool, `ruflo_read_agent_count`. The probe called **no** `turn/start` and consumed no model inference tokens.
+
+**One bounded paid test, successfully completed:** [GitHub run 39169213646](https://github.com/ibboabdoli-ai/ruflo-hub/actions/runs/39169213646) used Codex 0.163.0 and RuFlo 3.56.10 in a disposable, read-only sandbox with exactly one exposed annotated read-only MCP tool. The Codex JSON stream showed `mcp_tool_call` for `ruflo_safe.ruflo_read_agent_count` transitioning **in_progress → completed**, followed by model output `STATUS: 0 agents.` Zero agents is expected in the isolated empty sandbox. The facade proxied RuFlo's upstream `agent_list` and returned a validated numeric count. Provider-reported usage: **32,012 input tokens** (including **21,205 cached input**) and **124 output tokens**. This is not a verified invoice or an exact currency charge.
+
+**Security constraints preserved:** No API key passed into the RuFlo subprocess; GitHub checkout has no persisted write credential. No Production access, no original Receipt AI/Proffera source checkout, no merge, no deployment. The facade rejects write-capable MCP calls and invalid parameters. Further paid runs require the explicit `[run-paid-codex-test]` marker on a matching test-script change; no retries are scheduled.
+
+**Remaining work:** Native RuFlo-managed multi-agent execution or autonomous Researcher → Coder → Tester handoffs are **not yet proven**. Only this single successful read-only Codex → RuFlo tool call is verified. Before attempting live native multi-agent tasks, separately review and approve a dedicated task-level authorization/sandbox design. Do not equate this success with autonomous repairs.
+
+---
+
 # Safe RuFlo MCP Facade — Result and Release Gate
 
 Date: 2026-10-18, repository: ibboabdoli-ai/ruflo-hub.
