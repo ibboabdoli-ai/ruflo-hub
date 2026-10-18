@@ -41,13 +41,17 @@ function summarize(value){
       name:r.name||r.serverName||r.id||null,
       fields:Object.keys(r).slice(0,15),
       toolNames:(Array.isArray(r.tools)?r.tools:
-        Array.isArray(r.tools?.tools)?r.tools.tools:[]).map(t=>t.name).slice(0,10),
+        Array.isArray(r.tools?.tools)?r.tools.tools:
+        Array.isArray(r.tools?.data)?r.tools.data:[]).map(t=>t.name).slice(0,10),
       toolCount:Array.isArray(r.tools)?r.tools.length:
-        Array.isArray(r.tools?.tools)?r.tools.tools.length:null,
+        Array.isArray(r.tools?.tools)?r.tools.tools.length:
+        Array.isArray(r.tools?.data)?r.tools.data.length:null,
+      toolFields:r.tools&&typeof r.tools==='object'&&!Array.isArray(r.tools)?Object.keys(r.tools).slice(0,12):[],
       toolShape:Array.isArray(r.tools)?'array':
         (r.tools&&typeof r.tools==='object'?'object':typeof r.tools),
-      status:r.status?.state||r.status||r.startupStatus||null,
-      error:r.error?String(r.error).slice(0,250):null
+      status:r.runtimeStatus||r.status?.state||r.status||r.startupStatus||null,
+      error:r.error?String(r.error).slice(0,250):
+        r.toolsError?String(r.toolsError).slice(0,250):null
     })).slice(0,10)
   };
 }
@@ -95,7 +99,7 @@ try{
   const global=await rpc('mcpServerStatus/list',{serverName:'ruflo_safe',detail:'toolsAndAuthOnly'},40000);
   console.log('GLOBAL_MCP: '+JSON.stringify(summarize(global)));
   const start=await rpc('thread/start',{
-    cwd,ephemeral:true,approvalPolicy:'never',sandbox:'readOnly'
+    cwd,ephemeral:true,approvalPolicy:'never',sandbox:'read-only'
   },40000);
   const tid=start.result?.thread?.id;
   console.log('THREAD_START: '+JSON.stringify({
