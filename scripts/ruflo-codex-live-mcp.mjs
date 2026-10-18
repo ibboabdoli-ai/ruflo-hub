@@ -42,7 +42,12 @@ try{
   'If ruflo MCP is unavailable, begin STATUS: UNAVAILABLE and do not fabricate a tool result.'
  ].join(' ');
  const args=['exec','--json','--sandbox','read-only','--skip-git-repo-check',
-   '--ephemeral','--model','gpt-5.6-luna','-c','model_reasoning_effort="low"',prompt];
+   '--ephemeral','--model','gpt-5.6-luna',
+   '-c','model_reasoning_effort="low"',
+   '-c','mcp_servers.ruflo.enabled_tools=["agent_list"]',
+   '-c','mcp_servers.ruflo.default_tools_approval_mode="auto"',
+   '-c','mcp_servers.ruflo.tools.agent_list.approval_mode="auto"',
+   prompt];
  const before=Date.now();
  const result=safeRun(args,{...base,CODEX_API_KEY:key},105000);
  const elapsedMs=Date.now()-before;
@@ -60,7 +65,8 @@ try{
    (String(x.server||'').includes('ruflo')||x.server===null) && x.state==='completed');
  const summaryEvent=events.filter(x=>x.type==='turn.completed').at(-1);
  const usage=summaryEvent?.usage||summaryEvent?.turn?.usage||null;
- console.log('Codex: exit='+result.status+' elapsedMs='+elapsedMs+
+ console.log('Codex run limited to one explicit approved read-only RuFlo tool.');
+ console.log('Codex: exit='+result.status' elapsedMs='+elapsedMs+
    ' events='+events.length+' mcpToolEvents='+calls.length);
  console.log('Observed Ruflo MCP tool events: '+JSON.stringify(observed.slice(0,12)));
  console.log('MCP item error diagnostics: '+JSON.stringify(calls.filter(e=>e.item?.status==='failed').slice(0,2).map(e=>({
