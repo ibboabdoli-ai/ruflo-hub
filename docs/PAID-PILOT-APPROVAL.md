@@ -43,9 +43,7 @@ executing in a step that holds them.
 - `ruflo-readonly-facade.yml`: real local RuFlo MCP read-only handshake smoke
 - `ruflo-codex-live-mcp.yml`: zero-key read-only facade preflight
 - `ruflo-tracked-openai-relay.yml`: offline bounded-provider regression only
-- `node scripts/ruflo-codex-receipt-audit.mjs <local-jsonl>`: an **offline**
-  parser that proves an actual MCP return value matches Codex's final count.
-  It rejects duplicates, fabricated results, missing evidence and failed turns.
+- `lib/codex-mcp-proof.mjs` + `tests/codex-mcp-proof.test.mjs`:\n  offline verification of exact MCP count equality, duplicate-call rejection,\n  missing results, fabricated answers and failed turns. No CLI file input.
 
 **Not authorized:** enabling the prior paid workflows, merging Draft PR #1,
 connecting Proffera, enabling autonomous agents or deploying any service.
