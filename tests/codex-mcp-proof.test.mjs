@@ -60,3 +60,27 @@ test('failed process, unavailable final, and missing completed turn fail closed'
   const partial=receipt().slice(0,-1);
   assert.equal(verifyCodexMcpReceipt(partial).ok,false);
 });
+
+test('failed, interrupted or extra turns are rejected even with a correct count',()=>{
+  const failed=receipt(0);
+  failed.push({type:'turn.failed'});
+  assert.equal(verifyCodexMcpReceipt(failed).ok,false);
+  const extra=receipt(0);
+  extra.splice(2,0,{type:'turn.started'});
+  assert.equal(verifyCodexMcpReceipt(extra).ok,false);
+  const retry=receipt(0);
+  retry.push(...receipt(0));
+  assert.equal(verifyCodexMcpReceipt(retry).ok,false);
+  const cancelled=receipt(0);
+  cancelled.push({type:'turn.cancelled'});
+  assert.equal(verifyCodexMcpReceipt(cancelled).ok,false);
+});
+
+test('cross-turn or out-of-order result evidence never counts as one valid call',()=>{
+  const before=receipt(0);
+  before.unshift(before.splice(2,1)[0]);
+  assert.equal(verifyCodexMcpReceipt(before).ok,false);
+  const outOfOrder=receipt(0);
+  outOfOrder.splice(3,0,outOfOrder.splice(4,1)[0]);
+  assert.equal(verifyCodexMcpReceipt(outOfOrder).ok,false);
+});
