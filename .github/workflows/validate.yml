@@ -17,4 +17,8 @@ jobs:
           node-version: '22'
       - run: npm run validate
       - run: npm test
-      - run: node --check scripts/ruflo-tracked-openai-relay.mjs && node --check lib/hybrid-openai.mjs
+      - name: Syntax-check every maintained script and test
+        run: |
+          for file in scripts/*.mjs lib/*.mjs tests/*.mjs; do
+            node --check "$file"
+          done
