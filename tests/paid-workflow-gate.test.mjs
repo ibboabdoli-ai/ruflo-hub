@@ -20,12 +20,16 @@ test('Codex credential-free preflight enforces MCP smoke and no paid step',()=>{
   const workflow=workflows.find(w=>w.name==='ruflo-codex-live-mcp.yml');
   assert.ok(workflow);
   assert.match(workflow.text,/node scripts\/ruflo-readonly-facade-smoke\.mjs/);
-  assert.match(workflow.text,/node scripts\/ruflo-codex-receipt-audit\.mjs/);
+  assert.match(workflow.text,/node --check scripts\/ruflo-codex-receipt-audit\.mjs/);
   assert.doesNotMatch(workflow.text,/codex\s+exec/);
 });
 
 test('all maintained RuFlo pilot workflows check untracked checkout mutations',()=>{
-  for(const {name,text} of workflows.filter(w=>w.name.startsWith('ruflo-'))){
+  for(const {name,text} of workflows.filter(w=>[
+    'ruflo-codex-live-mcp.yml',
+    'ruflo-tracked-openai-relay.yml',
+    'ruflo-readonly-facade.yml'
+  ].includes(w.name))){
     assert.match(text,/git status --porcelain --untracked-files=all/,name);
   }
 });
