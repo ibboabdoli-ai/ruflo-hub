@@ -167,17 +167,21 @@ try{
  if(!denied)throw Error('Unexpected agent_execute success without credentials; do not claim isolation');
  passed++;
  const outputs=[];
+ // Preserve enough context for each role without exhausting a later paid call.
+ const cap=s=>String(s??'').slice(0,500);
  for(let i=0;i<3;i++){
   const prompts=[
    'Researcher: inspect this entirely synthetic JavaScript: '+fixture+
     '. Name exactly one edge case, answering in one line starting FINDING:.',
    'Coder: given synthetic JavaScript '+fixture+
-    ' and researcher finding '+outputs[0]+
+    ' and researcher finding '+cap(outputs[0])+
     '. Suggest a concise correction without editing a file. Begin PATCH:.',
    'Tester: given synthetic JavaScript '+fixture+
-    ', finding '+outputs[0]+' and patch '+outputs[1]+
+    ', finding '+cap(outputs[0])+' and patch '+cap(outputs[1])+
     '. State two concrete test inputs and expected outputs. Begin CHECK:.'
   ];
+  if(prompts.some(p=>p.length>HYBRID_LIMITS.maxPromptChars))
+   throw Error('Synthetic handoff exceeds prompt bounds');
   const labels=['FINDING:','PATCH:','CHECK:'];
   const answer=await model(roles[i],prompts[i],labels[i]);
   outputs.push(answer);
