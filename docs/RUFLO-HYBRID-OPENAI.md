@@ -13,3 +13,8 @@ Previous passing evidence: https://github.com/ibboabdoli-ai/ruflo-hub/actions/ru
 **Boundary:** The test harness performs the OpenAI calls and handoff; RuFlo owns task lifecycle. This is **not** native agent_execute or three autonomous RuFlo agents.
 
 GitHub PR #1 remains Draft; no merge, deployment or Production access.
+## Maintained pilot scope
+
+The former exploratory workflows (unguarded OpenAI relay, credential preflight, CLI registration, duplicate native-offline probes and Codex startup experiments) were retired from this PR. Their past GitHub Actions run URLs remain historical evidence in the retained result reports, not active entrypoints. Keep only the bounded, explicitly marked paid hybrid workflow, the isolated read-only facade smoke workflow, and the independently marked single-call Codex MCP proof.
+
+Do not infer source access, autonomous agent execution, or production readiness from the green CI or SonarQube checks. The current real-model evidence applies to the earlier fixture run, not the latest security refactor; a new paid end-to-end run requires separate authorization and a deliberate marker.
