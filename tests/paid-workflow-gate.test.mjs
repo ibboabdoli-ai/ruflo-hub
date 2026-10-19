@@ -20,7 +20,7 @@ test('Codex credential-free preflight enforces MCP smoke and no paid step',()=>{
   const workflow=workflows.find(w=>w.name==='ruflo-codex-live-mcp.yml');
   assert.ok(workflow);
   assert.match(workflow.text,/node scripts\/ruflo-readonly-facade-smoke\.mjs/);
-  assert.match(workflow.text,/node --check scripts\/ruflo-codex-receipt-audit\.mjs/);
+  assert.match(workflow.text,/node --check lib\/codex-mcp-proof\.mjs/);
   assert.doesNotMatch(workflow.text,/codex\s+exec/);
 });
 
