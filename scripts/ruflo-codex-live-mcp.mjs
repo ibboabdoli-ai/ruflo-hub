@@ -16,11 +16,16 @@ if(!key||key.length<20||!existsSync(codex||'')||!existsSync(ruflo||'')||!existsS
 const root=mkdtempSync(join(tmpdir(),'ruflo-codex-live-'));
 const cwd=join(root,'scratch'),home=join(root,'home'),cHome=join(root,'codex');
 [cwd,home,cHome].forEach(x=>mkdirSync(x,{recursive:true}));
-const base={...process.env,HOME:home,USERPROFILE:home,
-  CODEX_HOME:cHome,XDG_CONFIG_HOME:join(home,'.config'),XDG_CACHE_HOME:join(home,'.cache'),
-  GH_TOKEN:'',GITHUB_TOKEN:'',VERCEL_TOKEN:'',
+// Child processes receive only the minimum necessary environment. Never inherit
+// the runner's full environment, where additional credentials may be present.
+const base={
+  PATH:process.env.PATH,HOME:home,USERPROFILE:home,CODEX_HOME:cHome,
+  XDG_CONFIG_HOME:join(home,'.config'),XDG_CACHE_HOME:join(home,'.cache'),
+  CI:'true',DO_NOT_TRACK:'1',
+  OPENAI_API_KEY:'',GH_TOKEN:'',GITHUB_TOKEN:'',VERCEL_TOKEN:'',
   BLOB_READ_WRITE_TOKEN:'',TURSO_AUTH_TOKEN:'',TURSO_DATABASE_URL:'',
-  ANTHROPIC_API_KEY:'',OPENROUTER_API_KEY:'',OPENAI_API_KEY:''};
+  ANTHROPIC_API_KEY:'',OPENROUTER_API_KEY:''
+};
 function safeRun(args,env,timeout){
  const p=spawnSync(resolve(codex),args,{cwd,env,encoding:'utf8',
   maxBuffer:12*1024*1024,timeout});
