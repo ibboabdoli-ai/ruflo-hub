@@ -9,7 +9,7 @@ const workflows=readdirSync(dir).filter(f=>/\.ya?ml$/.test(f))
 
 test('no checked-in GitHub Actions workflow can obtain a paid API secret',()=>{
   for(const {name,text} of workflows) {
-    assert.doesNotMatch(text,/\$\{\{\s*secrets\./i,name);
+    assert.doesNotMatch(text,/\$\{\{\s*secrets\s*(?:\.|\[)/i,name);
     assert.doesNotMatch(text,/\[run-paid-[^\]]*\]/i,name);
     assert.doesNotMatch(text,/node\s+scripts\/ruflo-tracked-openai-relay\.mjs/i,name);
     assert.doesNotMatch(text,/node\s+scripts\/ruflo-codex-live-mcp\.mjs/i,name);
@@ -32,4 +32,11 @@ test('all maintained RuFlo pilot workflows check untracked checkout mutations',(
   ].includes(w.name))){
     assert.match(text,/git status --porcelain --untracked-files=all/,name);
   }
+});
+
+test('secret syntax guard recognizes both GitHub property-access forms',()=>{
+  const secretAccess=/\$\{\{\s*secrets\s*(?:\.|\[)/i;
+  assert.match("${{ secrets.OPENAI_API_KEY }}",secretAccess);
+  assert.match("${{ secrets['OPENAI_API_KEY'] }}",secretAccess);
+  assert.match('${{ secrets["OPENAI_API_KEY"] }}',secretAccess);
 });
