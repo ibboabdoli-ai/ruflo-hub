@@ -7,12 +7,16 @@
 - Ruflo MCP over stdio completed a real initialize handshake, discovered **358 tools**, and Codex 0.163.0 configured the Ruflo MCP server.
 - Direct calls to Ruflo MCP `swarm_status` and `agent_list` both returned `isError=false` when invoked by our no-secret MCP client.
 
-## What failed / remains unproven
-- **Codex native MCP tool execution: BLOCKED.** Codex model gpt-5.6-luna issued real MCP tool-call attempts, including `swarm_status` and `agent_list`, but Codex classified the calls `failed` with the exact error:
+## Earlier failures (historical; read-only tool execution subsequently succeeded)
+- **Earlier Codex native MCP tool execution: BLOCKED at that time.** Codex model gpt-5.6-luna issued real MCP tool-call attempts, including `swarm_status` and `agent_list`, but Codex classified the calls `failed` with the exact error:
   `MCP tool call requires approval, but approval policy is never`.
-- This happened despite applying a tool allowlist to `agent_list`, setting its approval mode to `auto`, and testing on-request approval policy. Do **not** claim a completed MCP call.
+- This happened despite applying a tool allowlist to `agent_list`, setting its approval mode to `auto`, and testing on-request approval policy. Those early attempts did **not** complete an MCP call.
 - Multi-agent reasoning, native RuFlo coordination/agent handoff, autonomous repair, direct Codex tool-based write/test cycles and persistence have not been demonstrated.
 - One intermediate job failed from a test-script syntax typo, not a provider/tool failure. A `node --check` safety step was then added.
+
+## Later 18 October result — read-only MCP call succeeded
+- [Run 39169213646](https://github.com/ibboabdoli-ai/ruflo-hub/actions/runs/39169213646) successfully executed one `ruflo_safe.ruflo_read_agent_count` through Codex in an isolated read-only sandbox. The completed tool event was followed by `STATUS: 0 agents.`
+- The earlier approval/startup failures above are historical. This proves **one read-only Codex-to-RuFlo tool invocation**, not RuFlo-native autonomous multi-agent execution.
 
 ## Evidence
 - MCP handshake + native tools discovery: https://github.com/ibboabdoli-ai/ruflo-hub/actions/runs/39117247836
@@ -30,4 +34,4 @@
 - Main branch is unchanged. Draft PR only.
 
 ## Next engineering step (not executed)
-Review Codex MCP approval policy or implement an audited **read-only** MCP facade exposing only a single schema-validated, properly annotated Ruflo health/agent-list operation. Prove that Codex can execute it in the ephemeral sandbox without interactive approval. Run one bounded model session after local smoke tests succeed, then reconsider a three-role native coordination pilot. Do not broaden permissions or add GitHub/Production keys to the agent runtime.
+The single-tool, audited read-only facade was built and its successful Codex invocation was recorded above. Next, complete the current PR review, revalidate guardrails on the latest source, and separately approve any new bounded live pilot. **Native autonomous three-agent work remains unproven.** Do not broaden permissions or add GitHub/Production keys to the agent runtime.
