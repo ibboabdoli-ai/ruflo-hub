@@ -4,6 +4,8 @@ on:
     branches: [work/ruflo-three-agent-lab-20261018]
     paths:
       - scripts/ruflo-tracked-openai-relay.mjs
+      - lib/hybrid-openai.mjs
+      - tests/hybrid-openai.test.mjs
       - .github/workflows/ruflo-tracked-openai-relay.yml
 permissions:
   contents: read
