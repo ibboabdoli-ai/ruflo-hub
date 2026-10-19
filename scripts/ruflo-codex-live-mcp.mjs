@@ -66,8 +66,14 @@ try{
   server:e.item?.server||e.item?.server_name||null,
   tool:e.item?.tool||e.item?.name||e.item?.tool_name||null,
   state:e.item?.status||null}));
- const toolHit=observed.some(x=>String(x.tool||'').includes('ruflo_read_agent_count') &&
-   (String(x.server||'').includes('ruflo_safe')||x.server===null) && x.state==='completed');
+ // Require one actual completed call, not just one matching event among duplicates.
+ const intended=observed.filter(x=>x.tool==='ruflo_read_agent_count' &&
+   x.server==='ruflo_safe');
+ const allIntended=intended.length===observed.length && intended.length>0;
+ const completedCount=intended.filter(x=>x.state==='completed').length;
+ const startedCount=intended.filter(x=>x.state==='in_progress').length;
+ const toolHit=allIntended && completedCount===1 && startedCount===1 &&
+   intended.length===2;
  const summaryEvent=events.filter(x=>x.type==='turn.completed').at(-1);
  const usage=summaryEvent?.usage||summaryEvent?.turn?.usage||null;
  console.log('Codex run exposes only annotated read-only ruflo_read_agent_count via strict local facade.');
@@ -77,6 +83,12 @@ try{
  console.log('Codex event types: '+JSON.stringify(events.map(e=>({event:e.type,item:e.item?.type||null}))));
  const messages=events.filter(e=>e.item?.type==='agent_message').map(e=>String(e.item?.text||'')).filter(Boolean);
  const excerpt=messages.at(-1)?.replaceAll(key,'[redacted]').slice(0,600)||'none';
+ // Reject unavailable or fabricated nonnumeric final statuses. Count is read from
+ // the single completed MCP result by the model, not inferred from registration.
+ const finalStatus=messages.at(-1)?.trim()||'';
+ const countMatch=/^STATUS:\s*(\d+)\s+agents?\.?$/i.exec(finalStatus);
+ const countIsValid=Boolean(countMatch && Number.isSafeInteger(Number(countMatch[1])) &&
+   Number(countMatch[1])>=0 && Number(countMatch[1])<=1000);
  console.log('Codex sanitized final message: '+excerpt);
 
  console.log('MCP item error diagnostics: '+JSON.stringify(calls.filter(e=>e.item?.status==='failed').slice(0,2).map(e=>({
@@ -85,7 +97,7 @@ try{
  }))));
  if(usage)console.log('Codex provider-reported usage: '+JSON.stringify(usage).slice(0,700));
  if(result.error)console.log('Codex process termination: '+String(result.error.code||'unknown'));
- const ok=result.status===0 && toolHit;
+ const ok=result.status===0 && toolHit && countIsValid;
  console.log(ok?'PASS: Codex completed annotated read-only facade -> Ruflo agent_list via native MCP.':
    'INCOMPLETE: no completed native Codex->RuFlo read-only facade invocation.');
  if(process.env.GITHUB_STEP_SUMMARY)appendFileSync(process.env.GITHUB_STEP_SUMMARY,
