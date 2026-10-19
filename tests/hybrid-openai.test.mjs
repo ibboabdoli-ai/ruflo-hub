@@ -69,11 +69,18 @@ test('incomplete and oversized model results are rejected', async () => {
   await assert.rejects(()=>oversized.generate('researcher','fixture','FINDING:'),/bounds/);
 });
 
-test('harmless formatting deviations are recorded without silently inventing a prefix', async () => {
+test('unexpected model format fails closed', async () => {
   const client=createBoundedOpenAIClient({apiKey:key,fetchImpl:async()=>result('Fix the empty-list case')});
-  const output=await client.generate('researcher','fixture','FINDING:');
-  assert.equal(output.prefixMatch,false);
-  assert.equal(output.text,'Fix the empty-list case');
+  await assert.rejects(()=>client.generate('researcher','fixture','FINDING:'),/required role prefix/);
+  assert.equal(client.attempts(),1);
+});
+
+test('mismatched response prefix for an otherwise valid role is rejected before billing', async () => {
+  let calls=0;
+  const client=createBoundedOpenAIClient({apiKey:key,fetchImpl:async()=>{calls++;return result('PATCH: unexpected')}});
+  await assert.rejects(()=>client.generate('researcher','fixture','PATCH:'),/role response prefix/);
+  assert.equal(client.attempts(),0);
+  assert.equal(calls,0);
 });
 
 test('invalid credentials are rejected at construction', () => {
