@@ -30,7 +30,7 @@
 - Only synthetic inputs. No Production, Proffera, Receipt AI source checkout, or write-access checkout token.
 - Codex executes read-only in a temporary directory. The Ruflo MCP command was launched with both API-key environment variables scrubbed. The secret was made available only to Codex.
 - Four short, bounded Codex attempts generated provider-reported usage; not a verified billed dollar amount. Do not auto-retry.
-- To prevent any more paid runs from routine PR edits, this workflow now requires an intentional `[run-paid-codex-test]` marker in a push commit message before its job may start.
+- **2026-10-19 update:** commit markers were found insufficient as an authorization boundary. The live Codex CLI test harness was removed and its workflow now runs only free, credential-free MCP checks. The single-tool success above is historical, not a fresh paid result. See [owner-approval prerequisites](PAID-PILOT-APPROVAL.md).
 - Main branch is unchanged. Draft PR only.
 
 ## Next engineering step (not executed)
