@@ -3,7 +3,7 @@ on:
   push:
     branches: [work/ruflo-three-agent-lab-20261018]
     paths:
-      - scripts/ruflo-codex-live-mcp.mjs
+      - scripts/ruflo-codex-receipt-audit.mjs
       - scripts/ruflo-readonly-facade.mjs
       - scripts/ruflo-readonly-facade-smoke.mjs
       - lib/codex-mcp-proof.mjs
@@ -39,7 +39,7 @@ jobs:
         run: |
           npm run validate
           npm test
-          node --check scripts/ruflo-codex-live-mcp.mjs
+          node --check scripts/ruflo-codex-receipt-audit.mjs
           node --check scripts/ruflo-readonly-facade.mjs
           node --check scripts/ruflo-readonly-facade-smoke.mjs
       - name: Install pinned RuFlo without scripts or credentials
