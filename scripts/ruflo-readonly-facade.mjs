@@ -52,7 +52,7 @@ function readRealCount(){
           if(phase===0&&msg.id===1&&msg.result?.serverInfo){
             phase=1;
             child.stdin.write(JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized'})+'\n');
-            push('tools/call',2,{name:'agent_list',arguments:{}});
+            push('tools/call',2,{name:'agent_list',arguments:{includeTerminated:true}});
           }else if(phase===1&&msg.id===2){
             if(msg.error||msg.result?.isError)return conclude(Error('Upstream RuFlo reported an error'));
             const items=msg.result?.content;
