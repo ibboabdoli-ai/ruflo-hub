@@ -42,7 +42,7 @@ at the intended facade script inside disposable CODEX_HOME. The previously
 discovered full Ruflo MCP server also launched and provided 358 tools.
 Evidence: https://github.com/ibboabdoli-ai/ruflo-hub/actions/runs/39166993184
 
-## NOT YET PASSING: Codex model tool discovery / invocation
+## Historical failures: Codex model tool discovery / invocation (superseded by successful October 18 update above)
 
 1. Initial bounded model test exposed only the read-only facade to Codex.
    Codex completed normally, but its JSON events contained **zero MCP tool
@@ -56,11 +56,7 @@ Evidence: https://github.com/ibboabdoli-ai/ruflo-hub/actions/runs/39166993184
    https://github.com/ibboabdoli-ai/ruflo-hub/actions/runs/39167126011
    Provider usage reported 42,659 input and 243 output tokens.
 
-**DO NOT claim that Codex successfully executed this MCP tool.** We have proven
-the facade's direct behavior and the CLI registration, but not that Codex
-published the tool to the model at runtime. This is distinct from the earlier
-unannotated-RuFlo call failing with
-`MCP tool call requires approval, but approval policy is never`.
+**Historical conclusion only:** These early attempts had not yet proven that Codex executed the MCP tool or exposed it to the model. The successful one-call `ruflo_safe.ruflo_read_agent_count` result documented at the top of this file supersedes that status. Neither result demonstrates autonomous multi-agent coordination.
 
 ## Cost/security stop
 
