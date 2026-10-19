@@ -21,7 +21,7 @@
 - [Successful run 39171029168](https://github.com/ibboabdoli-ai/ruflo-hub/actions/runs/39171029168): **Researcher -> Coder -> Tester** produced three OpenAI model responses for one artificial code sample.
 - Each response was saved with native MCP task_complete, then task_status returned completed and an exact match to that model response. Three out of three independently verified.
 - The successful run recorded **303 input tokens and 95 output tokens** across **three** OpenAI API calls; these are usage readings, not a verified invoice. First failed run had its own token usage not included in these totals.
-- The contract still enforces at most three provider requests/run, small input, 240 output tokens/request, no automatic retries, and an explicit commit marker to trigger the paid workflow.
+- Historical harness safeguards were at most three provider requests per run, small input and 240 output tokens per request, without retries. **As of 2026-10-19 the commit-marker paid workflow has been disabled**; only offline CI remains, pending independent owner-controlled secret and spend protection.
 
 ## Precise architecture boundary
 - **RuFlo actually performs:** task registration/assignment/state transitions/result persistence, agent-role tracking and swarm bookkeeping.
@@ -33,6 +33,6 @@ With only an OpenAI API key, the verified deliverable is hybrid RuFlo task track
 
 ## Controls
 - No code changes outside the lab branch and no merge, push from GitHub Actions, deploy or production contact.
-- The RuFlo child process receives an explicit credential-free environment, and the OpenAI secret is only available to the constrained model step.
+- Historical live run: the RuFlo child process received a credential-free environment and the key was available to the bounded model step. Current PR workflows have **no API secret step**.
 - One-time disposable filesystem, synthetic fixtures, no persistent autonomous service, and no further paid runs scheduled.
 - Keep PR as Draft pending security review and explicit merge authorization.
