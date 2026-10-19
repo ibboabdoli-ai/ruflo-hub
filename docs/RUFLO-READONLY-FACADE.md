@@ -20,6 +20,7 @@ These MCP annotations convey information to clients but do not grant authorizati
 by themselves. The hard allowlist and result validation are the actual boundary.
 The previous native Codex → unannotated RuFlo call failed with:
 \`MCP tool call requires approval, but approval policy is never\`.
-The next test should verify a **completed**, not merely attempted, Codex MCP call
-with this facade, while keeping Codex's sandbox read-only and approval policy
-unchanged. No \`--dangerously-bypass-approvals-and-sandbox\` flag is permitted.
+A later October 18 pilot verified one completed Codex MCP call through the facade.
+That historical success does not prove autonomous multi-agent execution.
+As of October 19, all paid Codex workflow invocations are disabled pending
+owner approval and hard provider-level consumption controls. No \`--dangerously-bypass-approvals-and-sandbox\` flag is permitted.
