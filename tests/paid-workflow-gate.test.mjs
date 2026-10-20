@@ -7,15 +7,14 @@ const dir='.github/workflows';
 const workflows=readdirSync(dir).filter(f=>/\.ya?ml$/.test(f))
   .map(f=>({name:f,text:readFileSync(join(dir,f),'utf8')}));
 
-// Fail closed if any GitHub expression accesses the secrets context, including
-// toJSON(secrets), bracket access, embedded functions and multiline expressions.
+// Fail closed on the entire secrets token in Actions workflow YAML.
+// This intentionally forbids even harmless references: expressions,
+// quoted keys, flow-style YAML, comments and scalar spelling variants.
+// Also forbid YAML hex/Unicode escapes that could disguise a key.
+// This is an offline regression tripwire, NOT a GitHub permission boundary.
 function accessesActionsSecrets(text) {
-  const expressions=text.matchAll(/\$\{\{([\s\S]*?)\}\}/g);
-  for (const expression of expressions) {
-    if (/\bsecrets\b/i.test(expression[1])) return true;
-  }
-  // Reusable workflows can also import all caller secrets with no expression.
-  return /^\s*secrets:\s*inherit\s*(?:#.*)?$/im.test(text);
+  return /\bsecrets\b/i.test(text) ||
+    /\\(?:x[0-9a-f]{2}|u[0-9a-f]{4}|U[0-9a-f]{8})/i.test(text);
 }
 
 
@@ -55,7 +54,18 @@ test('secret guard rejects direct, indirect, multiline and inherited credential 
     '${{ fromJSON(toJSON(secrets)).OPENAI_API_KEY }}',
     '${{ format(\'{0}\', secrets.OPENAI_API_KEY) }}',
     '${{\n toJSON(\n secrets\n )\n }}',
-    '    secrets: inherit'
+    '    secrets: inherit',
+    "    secrets : inherit",
+    "    secrets: \"inherit\"",
+    "    secrets: 'inherit'",
+    "    'secrets': inherit",
+    "    \"secrets\": \"inherit\"",
+    "    { uses: org/repo/.github/workflows/test.yml@main, secrets: inherit }",
+    "    { \"secrets\": \"inherit\" }",
+    "    secrets:\n      OPENAI_API_KEY: ${{ vars.INDIRECT_KEY }}",
+    "    \"\\x73ecrets\": inherit",
+    "    \"\\u0073ecrets\": inherit",
+    "    \"\\U00000073ecrets\": inherit"
   ];
   for (const input of forbidden) assert.equal(accessesActionsSecrets(input),true,input);
   const harmless=['${{ github.ref }}','${{ vars.SOME_SETTING }}',
