@@ -68,7 +68,7 @@ test('secret guard rejects direct, indirect, multiline and inherited credential 
   ];
   for (const input of forbidden) assert.equal(violatesWorkflowPolicy(input),true,input);
   const harmless=['${{ github.ref }}','${{ vars.SOME_SETTING }}',
-    '      # No secret is read here'];
+    'name: safe fixture\n      # No secret is read here'];
   for (const input of harmless) assert.equal(violatesWorkflowPolicy(input),false,input);
 });
 
