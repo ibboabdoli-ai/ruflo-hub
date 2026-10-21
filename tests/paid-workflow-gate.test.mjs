@@ -5,7 +5,7 @@ import {join, resolve} from 'node:path';
 import {spawnSync} from 'node:child_process';
 
 const dir='.github/workflows';
-const guard=resolve('scripts/check-workflow-secrets.rb');
+const guard=resolve('scripts/check-workflow-credentials.rb');
 const workflows=readdirSync(dir).filter(f=>/\.ya?ml$/.test(f))
   .map(f=>({name:f,text:readFileSync(join(dir,f),'utf8')}));
 
