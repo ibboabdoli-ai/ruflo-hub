@@ -10,16 +10,16 @@ const workflows=readdirSync(dir).filter(f=>/\.ya?ml$/.test(f))
   .map(f=>({name:f,text:readFileSync(join(dir,f),'utf8')}));
 
 // Check decoded YAML, not just the raw text, to stop key spelling bypasses.
-function isSafeWorkflow(source) {
+function violatesWorkflowPolicy(source) {
   const proc=spawnSync('ruby',['-r',guard,'-e','WorkflowSecretsGuard.verify!(STDIN.read)'],
     {input:source,encoding:'utf8',timeout:5000,maxBuffer:1024*1024});
   assert.ifError(proc.error);
-  return proc.status===0;
+  return proc.status!==0;
 }
 
 test('no checked-in GitHub Actions workflow can obtain a paid API secret',()=>{
   for(const {name,text} of workflows) {
-    assert.equal(isSafeWorkflow(text),false,name);
+    assert.equal(violatesWorkflowPolicy(text),false,name);
     assert.doesNotMatch(text,/\[run-paid-[^\]]*\]/i,name);
     assert.doesNotMatch(text,/node\s+scripts\/ruflo-tracked-openai-relay\.mjs/i,name);
     assert.doesNotMatch(text,/node\s+scripts\/ruflo-codex-live-mcp\.mjs/i,name);
@@ -66,10 +66,10 @@ test('secret guard rejects direct, indirect, multiline and inherited credential 
     "    \"\\u0073ecrets\": inherit",
     "    \"\\U00000073ecrets\": inherit"
   ];
-  for (const input of forbidden) assert.equal(isSafeWorkflow(input),true,input);
+  for (const input of forbidden) assert.equal(violatesWorkflowPolicy(input),true,input);
   const harmless=['${{ github.ref }}','${{ vars.SOME_SETTING }}',
     '      # No secret is read here'];
-  for (const input of harmless) assert.equal(isSafeWorkflow(input),false,input);
+  for (const input of harmless) assert.equal(violatesWorkflowPolicy(input),false,input);
 });
 
 test('parsed YAML detects escaped and line-joined secrets keys',()=>{
@@ -84,6 +84,6 @@ test('parsed YAML detects escaped and line-joined secrets keys',()=>{
     'jobs:\n  x: [',
     '---\nname: first\n---\nname: second'
   ];
-  for(const yaml of denied)assert.equal(isSafeWorkflow(yaml),false,yaml);
-  assert.equal(isSafeWorkflow('name: ok\non: push\njobs: {x: {runs-on: ubuntu-latest}}'),true);
+  for(const yaml of denied)assert.equal(violatesWorkflowPolicy(yaml),true,yaml);
+  assert.equal(violatesWorkflowPolicy('name: ok\non: push\njobs: {x: {runs-on: ubuntu-latest}}'),false);
 });
