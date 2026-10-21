@@ -1,26 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readdirSync, readFileSync} from 'node:fs';
-import {join} from 'node:path';
+import {join, resolve} from 'node:path';
+import {spawnSync} from 'node:child_process';
 
 const dir='.github/workflows';
+const guard=resolve('scripts/check-workflow-secrets.rb');
 const workflows=readdirSync(dir).filter(f=>/\.ya?ml$/.test(f))
   .map(f=>({name:f,text:readFileSync(join(dir,f),'utf8')}));
 
-// Fail closed on the entire secrets token in Actions workflow YAML.
-// This intentionally forbids even harmless references: expressions,
-// quoted keys, flow-style YAML, comments and scalar spelling variants.
-// Also forbid YAML hex/Unicode escapes that could disguise a key.
-// This is an offline regression tripwire, NOT a GitHub permission boundary.
-function accessesActionsSecrets(text) {
-  return /\bsecrets\b/i.test(text) ||
-    /\\(?:x[0-9a-f]{2}|u[0-9a-f]{4}|U[0-9a-f]{8})/i.test(text);
+// Check decoded YAML, not just the raw text, to stop key spelling bypasses.
+function isSafeWorkflow(source) {
+  const proc=spawnSync('ruby',['-r',guard,'-e','WorkflowSecretsGuard.verify!(STDIN.read)'],
+    {input:source,encoding:'utf8',timeout:5000,maxBuffer:1024*1024});
+  assert.ifError(proc.error);
+  return proc.status===0;
 }
-
 
 test('no checked-in GitHub Actions workflow can obtain a paid API secret',()=>{
   for(const {name,text} of workflows) {
-    assert.equal(accessesActionsSecrets(text),false,name);
+    assert.equal(isSafeWorkflow(text),false,name);
     assert.doesNotMatch(text,/\[run-paid-[^\]]*\]/i,name);
     assert.doesNotMatch(text,/node\s+scripts\/ruflo-tracked-openai-relay\.mjs/i,name);
     assert.doesNotMatch(text,/node\s+scripts\/ruflo-codex-live-mcp\.mjs/i,name);
@@ -67,8 +66,24 @@ test('secret guard rejects direct, indirect, multiline and inherited credential 
     "    \"\\u0073ecrets\": inherit",
     "    \"\\U00000073ecrets\": inherit"
   ];
-  for (const input of forbidden) assert.equal(accessesActionsSecrets(input),true,input);
+  for (const input of forbidden) assert.equal(isSafeWorkflow(input),true,input);
   const harmless=['${{ github.ref }}','${{ vars.SOME_SETTING }}',
     '      # No secret is read here'];
-  for (const input of harmless) assert.equal(accessesActionsSecrets(input),false,input);
+  for (const input of harmless) assert.equal(isSafeWorkflow(input),false,input);
+});
+
+test('parsed YAML detects escaped and line-joined secrets keys',()=>{
+  const denied=[
+    'jobs:\n  x:\n    ? "sec\\\n      rets"\n    : inherit',
+    'jobs:\n  x:\n    ? "sec\\\n      rets"\n    : "inherit"',
+    'jobs:\n  x:\n    "\\u0073ecrets": inherit',
+    'jobs:\n  x:\n    "\\x73ecrets": inherit',
+    'jobs: {x: {secrets: inherit}}',
+    'jobs:\n  x:\n    secrets : inherit',
+    'jobs:\n  x:\n    a: &ref value\n    b: *ref',
+    'jobs:\n  x: [',
+    '---\nname: first\n---\nname: second'
+  ];
+  for(const yaml of denied)assert.equal(isSafeWorkflow(yaml),false,yaml);
+  assert.equal(isSafeWorkflow('name: ok\non: push\njobs: {x: {runs-on: ubuntu-latest}}'),true);
 });
