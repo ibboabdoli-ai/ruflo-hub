@@ -91,7 +91,7 @@ test('403 on the second endpoint is exercised through CLI without leaking remote
   const loader=[
     'let calls=0;',
     'globalThis.fetch=async()=>{calls++;'+
-      'if(calls===1)return {ok:true,status:200,json:async()=>'+JSON.stringify(fixture())+'};'+
+      'if(calls===1)return {ok:true,status:200,json:async()=>('+JSON.stringify(fixture())+')};'+
       'if(calls===2)return {ok:false,status:403,json:async()=>({message:'+JSON.stringify(malicious)+'})};'+
       'throw Error("unexpected third network request");};',
     'process.on("exit",()=>{if(calls!==2)process.stderr.write("UNEXPECTED_FETCH_COUNT");});'
