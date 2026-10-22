@@ -83,10 +83,12 @@ if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
     console.error('Usage: node scripts/inspect-public-proffera-pr.mjs FULL_EXPECTED_SHA');
     process.exitCode=2;
   } else {
-    try {console.log(JSON.stringify(await inspectPublicProfferaPr(process.argv[2]),null,2));}
-    catch(error) {
-      console.error(error instanceof Error&&/^NOT VERIFIED:/.test(error.message)?
-        error.message:'NOT VERIFIED: probe failed');
+    try {
+      await inspectPublicProfferaPr(process.argv[2]);
+      console.log('OBSERVED_ONLY_NOT_MERGE_APPROVAL: public PR metadata verified against pinned SHA');
+    }
+    catch {
+      console.error('NOT VERIFIED: public metadata probe failed');
       process.exitCode=1;
     }
   }

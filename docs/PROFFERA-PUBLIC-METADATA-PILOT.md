@@ -8,7 +8,7 @@ Run with Node.js 22+ and an explicitly approved full PR head SHA:
 
 This script accepts no repository URL or credentials. It sends two unauthenticated GET requests to public GitHub REST endpoints for Proffera PR #941 and the exact commit's check-run metadata. There are no retries; each request has an 8-second timeout. Missing, stale, truncated or cross-head data stops with NOT VERIFIED.
 
-Only counts and an observation are printed. No source files, patches, PR comments, tokens, customer data, production resources, RuFlo workers, code writes, merge actions or deployments are accessed. Counts do not establish merge readiness.
+The CLI prints fixed, non-network-derived status text to prevent log injection. The exported function returns a bounded numeric observation to its caller, but prints no data from remote responses. No source files, patches, PR comments, tokens, customer data, production resources, RuFlo workers, code writes, merge actions or deployments are accessed. Counts do not establish merge readiness.
 
 Offline tests:
 
