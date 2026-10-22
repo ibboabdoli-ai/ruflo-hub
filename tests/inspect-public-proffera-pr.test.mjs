@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {inspectPublicProfferaPr} from '../scripts/inspect-public-proffera-pr.mjs';
+import {spawnSync} from 'node:child_process';
+import {resolve} from 'node:path';
 
 const sha='9ac8b38df37cdcb8a917ea4c10f2cc9f79a750ca';
 const response=body=>({ok:true,status:200,json:async()=>body});
@@ -28,7 +30,7 @@ test('two allowlisted public metadata GET requests; no authorization or writes',
   const result=await inspectPublicProfferaPr(sha,f);
   assert.deepEqual(requests.map(x=>x.url),[
     'https://api.github.com/repos/ibboabdoli-ai/Proffera/pulls/941',
-    'https://api.github.com/repos/ibboabdoli-ai/Proffera/commits/'+sha+'/check-runs?per_page=100'
+    'https://api.github.com/repos/ibboabdoli-ai/Proffera/commits/'+sha+'/check-runs?filter=all&per_page=100'
   ]);
   for(const {init} of requests) {
     assert.equal(init.method,'GET');
@@ -82,4 +84,26 @@ test('HTTP failures are sanitized and never retried',async()=>{
     return true;
   });
   assert.equal(attempts,1);
+});
+
+test('403 on the second endpoint is exercised through CLI without leaking remote text',()=>{
+  const malicious='REMOTE_DO_NOT_PRINT\nFAKE_ERROR_INJECTION';
+  const loader=[
+    'let calls=0;',
+    'globalThis.fetch=async()=>{calls++;'+
+      'if(calls===1)return {ok:true,status:200,json:async()=>'+JSON.stringify(fixture())+'};'+
+      'if(calls===2)return {ok:false,status:403,json:async()=>({message:'+JSON.stringify(malicious)+'})};'+
+      'throw Error("unexpected third network request");};',
+    'process.on("exit",()=>{if(calls!==2)process.stderr.write("UNEXPECTED_FETCH_COUNT");});'
+  ].join('\n');
+  const child=spawnSync(process.execPath,[
+    '--import','data:text/javascript,'+encodeURIComponent(loader),
+    resolve('scripts/inspect-public-proffera-pr.mjs'),sha
+  ],{encoding:'utf8',timeout:10000,maxBuffer:1024*1024});
+  assert.ifError(child.error);
+  assert.equal(child.signal,null);
+  assert.equal(child.status,1);
+  assert.equal(child.stdout,'');
+  assert.equal(child.stderr,'NOT VERIFIED: public metadata probe failed\n');
+  assert.doesNotMatch(child.stderr,/REMOTE_DO_NOT_PRINT|FAKE_ERROR_INJECTION/);
 });

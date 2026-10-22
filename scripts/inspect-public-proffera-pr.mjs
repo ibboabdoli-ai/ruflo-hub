@@ -53,7 +53,7 @@ export async function inspectPublicProfferaPr(expectedSha,fetchImpl=fetch) {
     throw Error('NOT VERIFIED: target PR already merged');
 
   const checks=await publicGet(API+'/commits/'+expectedSha+
-    '/check-runs?per_page='+MAX_CHECKS,fetchImpl);
+    '/check-runs?filter=all&per_page='+MAX_CHECKS,fetchImpl);
   if(!checkedNumber(checks?.total_count,MAX_CHECKS) ||
       !Array.isArray(checks?.check_runs) ||
       checks.check_runs.length!==checks.total_count)
