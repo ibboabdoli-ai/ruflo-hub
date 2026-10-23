@@ -32,12 +32,18 @@ function readRealCount(){
     };
     const timer=setTimeout(()=>conclude(Error('Upstream RuFlo MCP timed out')),25000);
     function push(method,id,params){
-      child.stdin.write(JSON.stringify({jsonrpc:'2.0',id,method,params})+'\n');
+      if(finished)return;
+      try{
+        child.stdin.write(JSON.stringify({jsonrpc:'2.0',id,method,params})+'\n');
+      }catch{
+        conclude(Error('Upstream RuFlo input failed'));
+      }
     }
     try{
       child=spawn(binary,['mcp','start'],{
         cwd:process.cwd(),env:scrubbedEnv(),stdio:['pipe','pipe','pipe']
       });
+      child.stdin.on('error',()=>conclude(Error('Upstream RuFlo input failed')));
       child.on('error',()=>conclude(Error('Upstream executable failed to launch')));
       child.on('exit',()=>conclude(Error('Upstream RuFlo MCP exited before response')));
       child.stderr.on('data',()=>{}); // Never forward upstream stderr.
@@ -51,7 +57,7 @@ function readRealCount(){
           let msg;try{msg=JSON.parse(line)}catch{continue}
           if(phase===0&&msg.id===1&&msg.result?.serverInfo){
             phase=1;
-            child.stdin.write(JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized'})+'\n');
+            push('notifications/initialized');
             push('tools/call',2,{name:'agent_list',arguments:{includeTerminated:true}});
           }else if(phase===1&&msg.id===2){
             if(msg.error||msg.result?.isError)return conclude(Error('Upstream RuFlo reported an error'));
@@ -72,7 +78,7 @@ function readRealCount(){
     }catch{return conclude(Error('Upstream initialization failed'))}
   });
 }
-let input='',busy=false;
+let input='',busy=false,discardOversizedLine=false;
 async function handle(msg){
   if(!msg||msg.jsonrpc!=='2.0'||typeof msg.method!=='string')return;
   if(msg.id===undefined)return; // Notification
@@ -105,10 +111,17 @@ async function handle(msg){
 process.stdin.setEncoding('utf8');
 process.stdin.on('data',chunk=>{
   input+=chunk;
-  if(input.length>MAX_LINE){input='';return}
   let end;
   while((end=input.indexOf('\n'))>=0){
-    const line=input.slice(0,end).trim();input=input.slice(end+1);
-    try{void handle(JSON.parse(line))}catch{ /* malformed input ignored */ }
+    const line=input.slice(0,end);input=input.slice(end+1);
+    if(discardOversizedLine||line.length>MAX_LINE){
+      discardOversizedLine=false;
+      continue;
+    }
+    try{void handle(JSON.parse(line.trim()))}catch{ /* malformed input ignored */ }
+  }
+  if(input.length>MAX_LINE){
+    input='';
+    discardOversizedLine=true; // Discard through the next newline, not just this chunk.
   }
 });

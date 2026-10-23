@@ -2,6 +2,7 @@ import {spawn} from 'node:child_process';
 import {existsSync,mkdtempSync,mkdirSync,rmSync,appendFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {createBoundedOpenAIClient,HYBRID_ROLES,HYBRID_LIMITS} from '../lib/hybrid-openai.mjs';
+import {nativeExecutionWasBlocked} from '../lib/native-execution-guard.mjs';
 import {join,resolve} from 'node:path';
 
 const ruflo=process.env.RUFLO_BIN;
@@ -157,9 +158,7 @@ try{
  // This tells us whether the advertised native worker can use the current OPENAI key.
  const attempt=await tool('agent_execute',{agentId:ids[0],
    prompt:'Synthetic math only: state what average([]) should return.',maxTokens:32},18000);
- const output=JSON.stringify(attempt.data||{}).toLowerCase();
- const denied=attempt.isError||attempt.data?.success===false||
-  /no llm provider|api.key|anthropic|openrouter|ollama|not configured|not set/.test(output);
+ const denied=nativeExecutionWasBlocked(attempt);
  console.log('AGENT_EXECUTE_NO_PROVIDER '+JSON.stringify({isError:attempt.isError,
    success:attempt.data?.success??null,blocked:denied,
    code:attempt.data?.code??null,

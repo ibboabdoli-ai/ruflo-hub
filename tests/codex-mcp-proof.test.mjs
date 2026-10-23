@@ -84,3 +84,17 @@ test('cross-turn or out-of-order result evidence never counts as one valid call'
   outOfOrder.splice(3,0,outOfOrder.splice(4,1)[0]);
   assert.equal(verifyCodexMcpReceipt(outOfOrder).ok,false);
 });
+
+test('missing, blank or mismatched MCP tool lifecycle IDs fail closed',()=>{
+  for(const change of [
+    events=>{delete events[2].item.id;},
+    events=>{delete events[3].item.id;},
+    events=>{events[2].item.id='';},
+    events=>{events[3].item.id='  ';},
+    events=>{events[3].item.id='another-call';}
+  ]){
+    const events=receipt(1);
+    change(events);
+    assert.equal(verifyCodexMcpReceipt(events).ok,false);
+  }
+});
