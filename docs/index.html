@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://api.github.com https://raw.githubusercontent.com; img-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; upgrade-insecure-requests">
+  <meta name="description" content="RuFlo Hub | داشبورد فقط‌خواندنی وضعیت عمومی GitHub و Proffera">
+  <title>RuFlo Hub | داشبورد مشاهده</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="aside" aria-label="ناوبری">
+    <div class="brand"><div class="logo" aria-hidden="true">R</div><div><strong>RuFlo Hub</strong><small>CONTROL CENTER</small></div></div>
+    <div class="aside-nav-wrap"><div class="navtitle">NAVIGATION</div><nav class="nav" aria-label="بخش‌ها">
+      <a class="active" href="#overview"><span aria-hidden="true">◫</span><span class="nav-text">نمای کلی</span></a>
+      <a href="#projects"><span aria-hidden="true">▦</span><span class="nav-text">پروژه‌ها</span></a>
+      <a href="#checks"><span aria-hidden="true">◉</span><span class="nav-text">تست‌ها و CI</span></a>
+      <a href="#security"><span aria-hidden="true">♧</span><span class="nav-text">امنیت و محدودیت‌ها</span></a>
+    </nav></div>
+    <div class="aside-bottom"><strong>● محیط فقط‌خواندنی</strong><p>هیچ دسترسی برای تغییر کد، اجرا یا ادغام در این صفحه وجود ندارد.</p></div>
+  </aside>
+  <main class="main" id="overview">
+    <header class="top"><div><div class="eyebrow">RUFLO / MONITORING / V1.0</div><h1 class="headline">داشبورد <em>RuFlo Hub</em></h1><p class="sub">مرکز مشاهده آزمایش‌های RuFlo و وضعیت عمومی Proffera</p></div>
+      <div class="top-actions"><div id="liveStatus" class="live"><span class="dot"></span><span id="liveText">در انتظار خواندن اطلاعات</span></div><button type="button" class="refresh" id="refresh" aria-label="دریافت آخرین اطلاعات از GitHub"><span aria-hidden="true">↻</span> به‌روزرسانی</button></div>
+    </header>
+    <div id="errorBox" class="errorbox hidden" role="alert"></div>
+    <section class="intro" aria-label="حالت عملکرد"><div><h2>همه‌چیز زیر نظر؛ بدون دخالت در سیستم اصلی</h2><p>این داشبورد صرفاً اطلاعات عمومی GitHub را نشان می‌دهد. عامل‌های RuFlo در Proffera فعال نشده‌اند و اجرای عملیاتی یا دستور تغییر کد از اینجا ممکن نیست.</p></div><span class="status-pill">◈ محیط مشاهده • READ ONLY</span></section>
+    <section class="metrics" aria-label="خلاصه وضعیت">
+      <div class="metric"><span class="metric-symbol" aria-hidden="true">▦</span><div class="metric-label">پروژه‌های قابل مشاهده</div><div class="metric-value">2</div><p class="metric-desc">RuFlo Hub و Proffera</p></div>
+      <div class="metric"><span class="metric-symbol" aria-hidden="true">✓</span><div class="metric-label">بررسی‌های موفق</div><div class="metric-value" id="passedCount">—</div><p class="metric-desc">آخرین بررسی‌های موجود GitHub</p></div>
+      <div class="metric alert"><span class="metric-symbol" aria-hidden="true">!</span><div class="metric-label">خطاها و بررسی‌های لغوشده</div><div class="metric-value" id="issueCount">—</div><p class="metric-desc">فقط نتایج دریافت‌شده</p></div>
+      <div class="metric"><span class="metric-symbol" aria-hidden="true">◎</span><div class="metric-label">اتصال به Supervisor</div><div class="metric-value textual" id="connectionValue">نامشخص</div><p class="metric-desc" id="connectionCaption">نیازمند بررسی پروفایل عمومی</p></div>
+    </section>
+    <section id="projects" aria-labelledby="projectsHeading"><div class="section-head"><div><h2 id="projectsHeading">پروژه‌ها</h2><p>وضعیت PRهای مشخص، بدون مشاهده محتوای کد</p></div><span class="tiny-link">۲ مخزن عمومی</span></div>
+      <div class="projects">
+        <article class="project"><div class="project-top"><div class="p-icon">R</div><div class="project-title"><h3>RuFlo Hub</h3><p>ibboabdoli-ai/ruflo-hub</p></div><span id="hubStatus" class="chip">نامشخص</span></div><hr class="p-divider"><div class="details"><div class="detail"><span>آزمایش آزمایشی</span><strong class="rtl">PR #4</strong></div><div class="detail"><span>نسخه بررسی‌شده</span><strong id="hubSha">—</strong></div><div class="detail"><span>تعداد بررسی‌های CI</span><strong id="hubChecks">—</strong></div><div class="detail"><span>وضعیت اجرای عملیاتی</span><strong class="rtl">غیرفعال در این داشبورد</strong></div></div><div class="card-footer"><a class="go" href="https://github.com/ibboabdoli-ai/ruflo-hub/pull/4" target="_blank" rel="noopener noreferrer">مشاهده PR #4 <span aria-hidden="true">↗</span></a><span class="small-note">اطلاعات عمومی</span></div></article>
+        <article class="project"><div class="project-top"><div class="p-icon violet">P</div><div class="project-title"><h3>Proffera</h3><p>ibboabdoli-ai/Proffera</p></div><span id="profferaStatus" class="chip">نامشخص</span></div><hr class="p-divider"><div class="details"><div class="detail"><span>درخواست تغییرات</span><strong class="rtl">PR #941</strong></div><div class="detail"><span>نسخه بررسی‌شده</span><strong id="profferaSha">—</strong></div><div class="detail"><span>فایل‌های تغییرکرده</span><strong id="profferaFiles">—</strong></div><div class="detail"><span>دسترسی این داشبورد</span><strong class="rtl">فقط اطلاعات عمومی</strong></div></div><div class="card-footer"><a class="go" href="https://github.com/ibboabdoli-ai/Proffera/pull/941" target="_blank" rel="noopener noreferrer">مشاهده PR #941 <span aria-hidden="true">↗</span></a><span class="small-note">بدون تأیید ادغام</span></div></article>
+      </div>
+    </section>
+    <section id="checks" aria-labelledby="checksHeading"><div class="section-head"><div><h2 id="checksHeading">تست‌ها و آخرین بررسی‌ها</h2><p>نتایج GitHub Actions و SonarCloud، مربوط به همان SHA هر PR</p></div></div><div class="split"><div class="panel"><div class="panel-title"><div><h3>وضعیت بررسی‌ها</h3><p id="checkDescription">ابتدا اطلاعات عمومی دریافت می‌شود</p></div><span id="checkSummary" class="chip">تأییدنشده</span></div><div class="bar" id="checkBar" aria-label="توزیع نتیجه بررسی‌ها"><span class="skipped initial-bar"></span></div><div class="legend"><span><i></i>موفق <b id="legendPass">—</b></span><span><i class="skipped"></i>اجرا نشده <b id="legendSkip">—</b></span><span><i class="pending"></i>در انتظار <b id="legendPending">—</b></span><span><i class="fail"></i>ناموفق/لغو <b id="legendFail">—</b></span></div><div class="stack" id="checkList" aria-live="polite"><p class="note">در حال آماده‌سازی اطلاعات...</p></div></div>
+        <div class="panel" id="security"><div class="panel-title"><div><h3>وضعیت امنیت و محدوده دسترسی</h3><p>قوانین این نسخه از داشبورد</p></div><span class="chip good">بدون توکن</span></div><div class="bullets"><div class="bullet"><span class="symbol">✓</span><span>فقط درخواست‌های GET به دو مخزن عمومی GitHub</span></div><div class="bullet"><span class="symbol">✓</span><span>بدون رمز، کلید API یا ذخیره اطلاعات ورود</span></div><div class="bullet"><span class="symbol">✓</span><span>بدون دکمه اجرای عامل، تغییر کد، ادغام یا Deploy</span></div><div class="bullet"><span class="symbol">✓</span><span>دریافت اطلاعات تنها با بارگذاری صفحه یا دکمه به‌روزرسانی</span></div></div><div class="card-safety"><strong id="policyTitle">اتصال Proffera: نامشخص</strong><p id="policyText">وضعیت پروفایل در مخزن RuFlo Hub را می‌خوانیم؛ در صورت عدم دسترسی، وضعیت را تأییدنشده اعلام می‌کنیم.</p></div><p class="note">قبولی تست‌ها به معنی مجوز ادغام PR یا آماده‌بودن Proffera برای تولید نیست.</p></div></div></section>
+    <section class="panel pilot-evidence" aria-label="شواهد آزمایش"><div class="panel-title"><div><h3>آخرین آزمایش ثبت‌شده RuFlo</h3><p>شواهد تاریخی؛ نه تعداد عامل‌های زنده</p></div><span class="chip">آزمایش ایزوله</span></div><div class="bullets"><div class="bullet"><span class="symbol">✓</span><span>RuFlo نسخه 3.56.10 در اجرای موقت GitHub Actions آزمایش شد.</span></div><div class="bullet"><span class="symbol">✓</span><span>رابط MCP فقط‌خواندنی RuFlo و رابط مستقل مشاهده اطلاعات عمومی Proffera موفق شدند.</span></div><div class="bullet"><span class="symbol">○</span><span>تعداد عامل‌های عملیاتی زنده در این داشبورد قابل مشاهده نیست؛ اتصال به Supervisor هنوز بخشی از این ابزار نیست.</span></div></div><a class="go evidence-link" target="_blank" rel="noopener noreferrer" href="https://github.com/ibboabdoli-ai/ruflo-hub/actions/runs/40078080424">مشاهده شواهد اجرای آزمایشی ↗</a></section>
+    <footer class="foot"><span>RuFlo Hub / Read-only Dashboard v1 · بدون بک‌اند و سرویس پولی</span><span id="lastUpdated">آخرین دریافت: هنوز انجام نشده</span></footer>
+  </main>
+</div>
+<script src="dashboard.js" defer></script>
+</body></html>
