@@ -1,0 +1,59 @@
+name: RuFlo + Proffera public MCP observer (isolated, no keys)
+on:
+  push:
+    branches: [work/ruflo-proffera-public-mcp-20261024]
+    paths:
+      - scripts/proffera-public-mcp.mjs
+      - scripts/proffera-public-mcp-smoke.mjs
+      - scripts/inspect-public-proffera-pr.mjs
+      - tests/proffera-public-mcp.test.mjs
+      - .github/workflows/ruflo-proffera-public-observer.yml
+permissions:
+  contents: read
+jobs:
+  public-observer:
+    if: github.repository == 'ibboabdoli-ai/ruflo-hub'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      RUFLO_VERSION: '3.56.10'
+      PROFFERA_EXPECTED_SHA: '9ac8b38df37cdcb8a917ea4c10f2cc9f79a750ca'
+      OPENAI_API_KEY: ''
+      ANTHROPIC_API_KEY: ''
+      CODEX_API_KEY: ''
+      GH_TOKEN: ''
+      GITHUB_TOKEN: ''
+      VERCEL_TOKEN: ''
+      TURSO_DATABASE_URL: ''
+      TURSO_AUTH_TOKEN: ''
+      BLOB_READ_WRITE_TOKEN: ''
+      NODE_OPTIONS: ''
+    steps:
+      - name: Checkout isolated hub with no persisted GitHub credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Use Node.js 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Enforce zero-key workflows and run offline tests
+        run: |
+          ruby scripts/check-workflow-credentials.rb
+          npm run validate
+          npm test
+      - name: Install reviewed RuFlo version without installation scripts
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ruflo"
+          npm install --prefix "$RUNNER_TEMP/ruflo" --no-save --ignore-scripts --no-audit --no-fund "ruflo@$RUFLO_VERSION"
+          echo "RUFLO_BIN=$RUNNER_TEMP/ruflo/node_modules/.bin/ruflo" >> "$GITHUB_ENV"
+      - name: Smoke real isolated RuFlo read-only MCP facade
+        run: node scripts/ruflo-readonly-facade-smoke.mjs
+      - name: Smoke separate Proffera public metadata MCP observer
+        run: node scripts/proffera-public-mcp-smoke.mjs
+      - name: Detect checkout mutations including untracked files
+        if: always()
+        run: |
+          git diff --exit-code
+          test -z "$(git status --porcelain --untracked-files=all)"
