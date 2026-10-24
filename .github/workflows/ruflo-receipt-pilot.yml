@@ -76,33 +76,61 @@ jobs:
       GH_TOKEN: ''
       GITHUB_TOKEN: ''
     steps:
+      - name: Checkout pinned reviewed public lock from Hub
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          path: hub
+          persist-credentials: false
       - name: Checkout public Receipt AI pinned commit only
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: ibboabdoli-ai/Ibbo_Receipt_AI
           ref: fa9ff4aecabdaeb05f2be54d4b7d649086d0fdd2
+          path: receipt
           persist-credentials: false
-      - name: Verify exact source revision
+      - name: Verify source and locked manifests match exact revisions
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "fa9ff4aecabdaeb05f2be54d4b7d649086d0fdd2"
+          test "$(git -C receipt rev-parse HEAD)" = "fa9ff4aecabdaeb05f2be54d4b7d649086d0fdd2"
+          test -f hub/locks/receipt-ai/package-lock.json
+          cp hub/locks/receipt-ai/package-lock.json receipt/package-lock.json
+          node - <<'NODE'
+          const {readFileSync}=require('node:fs');
+          const {isDeepStrictEqual}=require('node:util');
+          const pkg=JSON.parse(readFileSync('receipt/package.json','utf8'));
+          const lock=JSON.parse(readFileSync('receipt/package-lock.json','utf8'));
+          const root=lock.packages?.[''];
+          if(lock.lockfileVersion!==3||lock.name!==pkg.name||
+            !root||!isDeepStrictEqual(root.dependencies,pkg.dependencies)||
+            !isDeepStrictEqual(root.devDependencies,pkg.devDependencies))
+            throw new Error('Receipt manifest does not match pinned dependency lock');
+          NODE
       - name: Use project-required Node.js 24
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
-      - name: Install dependencies without running package install scripts
-        shell: bash
-        run: npm install --no-package-lock --ignore-scripts --no-audit --no-fund
+      - name: Install exactly locked dependencies without lifecycle scripts
+        working-directory: receipt
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Run local unit tests, no external services
+        working-directory: receipt
         run: npm test
       - name: TypeScript check
+        working-directory: receipt
         run: npm run typecheck
-      - name: ESLint
-        run: npm run lint
+      - name: Supply standard Next.js 15 ESLint configuration to disposable checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e receipt/eslint.config.mjs
+          cp hub/locks/receipt-ai/eslint.config.mjs receipt/eslint.config.mjs
+      - name: Run full ESLint and gate unexpected findings against immutable source baseline
+        shell: bash
+        run: node hub/scripts/receipt-eslint-baseline.mjs receipt
       - name: Summary
         shell: bash
         run: |
           echo "## Receipt AI source checks" >> "${GITHUB_STEP_SUMMARY}"
-          echo "Pinned public commit \`fa9ff4aecabdaeb05f2be54d4b7d649086d0fdd2\`: tests, TypeScript and lint passed." >> "${GITHUB_STEP_SUMMARY}"
+          echo "Pinned public commit \`fa9ff4aecabdaeb05f2be54d4b7d649086d0fdd2\`: tests, TypeScript and lint passed with reviewed lockfile." >> "${GITHUB_STEP_SUMMARY}"
           echo "No build/deploy/database/provider calls were attempted." >> "${GITHUB_STEP_SUMMARY}"
