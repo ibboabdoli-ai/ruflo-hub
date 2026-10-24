@@ -32,8 +32,25 @@ async function render(mode){
     if(url.includes('/pulls?'))return ok(isPro?[pr('ibboabdoli-ai/Proffera',941,mode==='xss'?'<img src=x onerror=alert(1)>':'Supervisor repair'),pr('ibboabdoli-ai/Proffera',949,'Site security')]:[]);
     if(url.endsWith('/pulls/941'))return ok(pr('ibboabdoli-ai/Proffera',941,'Supervisor repair'));
     if(url.includes('/check-runs?')){
-      if(url.includes('/'+PR941+'/'))return ok({total_count:1,check_runs:[{head_sha:PR941,name:'Governance',status:'completed',conclusion:'success'}]});
+      if(url.includes('/'+PR941+'/')){
+        if(mode==='pr-alert')return ok({total_count:3,check_runs:[
+          {head_sha:PR941,name:'E2E public smoke',status:'completed',conclusion:'cancelled'},
+          {head_sha:PR941,name:'Governance',status:'completed',conclusion:'success'},
+          {head_sha:PR941,name:'Run bounded Codex Worker',status:'completed',conclusion:'skipped'}
+        ]});
+        if(mode==='pr-invalid')return ok({total_count:1,check_runs:[{head_sha:HUB,name:'Governance',status:'completed',conclusion:'success'}]});
+        if(mode==='pr-truncated')return ok({total_count:101,check_runs:Array.from({length:100},(_,i)=>({head_sha:PR941,name:'success '+i,status:'completed',conclusion:'success'}))});
+        return ok({total_count:1,check_runs:[{head_sha:PR941,name:'Governance',status:'completed',conclusion:'success'}]});
+      }
       if(isPro&&mode==='wrong-sha')return ok(runItems(HUB));
+      if(!isPro&&mode==='statuses')return ok({total_count:6,check_runs:[
+        {head_sha:HUB,name:'OK',status:'completed',conclusion:'success'},
+        {head_sha:HUB,name:'FAIL',status:'completed',conclusion:'failure'},
+        {head_sha:HUB,name:'CANCEL',status:'completed',conclusion:'cancelled'},
+        {head_sha:HUB,name:'SKIP',status:'completed',conclusion:'skipped'},
+        {head_sha:HUB,name:'RUNNING',status:'in_progress',conclusion:null},
+        {head_sha:HUB,name:'NEUTRAL',status:'completed',conclusion:'neutral'}
+      ]});
       if(isPro&&mode==='sampled')return ok({total_count:2145,check_runs:Array.from({length:20},(_,i)=>({head_sha:PRO,name:'Supervisor CI '+i,status:'completed',conclusion:i%2?'skipped':'success'}))});
       return ok(runItems(isPro?PRO:HUB));
     }
@@ -46,12 +63,12 @@ async function render(mode){
 }
 test('all 403s leave CI and PR counts unknown',async()=>{
   const v=await render('none');
-  assert.equal(v.get('success'),'—');assert.equal(v.get('failed'),'—');assert.equal(v.get('prs-total'),'—');
+  for(const id of ['success','failed','cancelled','skipped','pending','unknown'])assert.equal(v.get(id),'—');assert.equal(v.get('prs-total'),'—');
   assert.match(v.get('notice'),/اطلاعات کامل نیست/);
 });
 test('one main report and other repo HTTP 403 mark CI counts partial',async()=>{
   const v=await render('partial');
-  assert.equal(v.get('success'),'1 (ناقص)');assert.equal(v.get('failed'),'0 (ناقص)');
+  assert.equal(v.get('success'),'1 (ناقص)');assert.equal(v.get('failed'),'0 (ناقص)');assert.equal(v.get('cancelled'),'0 (ناقص)');
   assert.equal(v.get('proffera-state'),'نامشخص');assert.match(v.get('notice'),/دریافت تأیید نشد/);
 });
 test('both main branches and latest open PRs are grounded by GitHub SHA and safe links',async()=>{
@@ -71,7 +88,7 @@ test('mismatched check SHA is rejected, with no confident Proffera main statisti
 });
 test('2145 main checks are sampled, never presented as a complete CI report',async()=>{
   const v=await render('sampled');
-  assert.equal(v.get('success'),'11 (ناقص)');assert.equal(v.get('failed'),'0 (ناقص)');
+  assert.equal(v.get('success'),'11 (ناقص)');assert.equal(v.get('failed'),'0 (ناقص)');assert.equal(v.get('skipped'),'10 (ناقص)');
   assert.match(v.get('proffera-checks'),/۲۰|20/);assert.match(v.get('proffera-checks'),/2145/);
   assert.match(v.get('notice'),/فقط به‌صورت نمونه/);
 });
@@ -80,4 +97,37 @@ test('untrusted PR title is shown as inert text, never parsed as HTML',async()=>
   const anchor=v.nodes('proffera-pr-list')[0].childNodes[0];
   assert.equal(anchor.textContent,'#941 · <img src=x onerror=alert(1)>');
   assert.equal(v.nodes('proffera-pr-list').length,2);
+});
+
+test('six CI outcome categories distinguish failure, cancellation, skip, pending and neutral',async()=>{
+  const v=await render('statuses');
+  assert.equal(v.get('success'),'2');
+  assert.equal(v.get('failed'),'1');
+  assert.equal(v.get('cancelled'),'1');
+  assert.equal(v.get('skipped'),'1');
+  assert.equal(v.get('pending'),'1');
+  assert.equal(v.get('unknown'),'1');
+  const rows=v.nodes('check-list');
+  assert.ok(rows.some(row=>row.childNodes?.[1]?.textContent==='لغوشده'));
+  assert.ok(rows.some(row=>row.childNodes?.[1]?.textContent==='خنثی / نامشخص'));
+});
+test('PR #941 alert is factual about cancelled and skipped checks, not merge approval',async()=>{
+  const v=await render('pr-alert');
+  assert.match(v.get('supervisor-alert'),/لغوشده: 1/);
+  assert.match(v.get('supervisor-alert'),/اجرا نشده: 1/);
+  assert.match(v.get('supervisor-alert'),/لغو شدن لزوماً به معنی شکست نهایی/);
+  assert.match(v.get('supervisor-alert'),/تأیید آمادگی ادغام/);
+});
+test('PR #941 check-run SHA mismatch makes alert unknown rather than successful',async()=>{
+  const v=await render('pr-invalid');
+  assert.equal(v.get('supervisor-alert'),'نتیجه بررسی PR #941 نامشخص است.');
+  assert.match(v.get('notice'),/شواهد PR #941: دریافت تأیید نشد/);
+});
+
+test('101 PR check runs with 100 apparent successes keep supervisor alert UNKNOWN',async()=>{
+  const v=await render('pr-truncated');
+  assert.match(v.get('supervisor-alert'),/نامشخص است/);
+  assert.match(v.get('supervisor-alert'),/100.*101/);
+  assert.doesNotMatch(v.get('supervisor-alert'),/موفق: 100/);
+  assert.match(v.nodes('supervisor-checks').at(-1).textContent,/ناقص/);
 });
