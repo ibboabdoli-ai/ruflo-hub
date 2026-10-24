@@ -49,3 +49,15 @@ test('remote data is displayed as text, and missing evidence remains unverified'
   assert.ok(script.includes('فهرست بررسی‌ها ناقص'));
   assert.ok(css.length>1500);
 });
+
+test('all six mutating permissions must be explicitly disabled before read-only profile claim',()=>{
+  for(const name of ['write','commit','push','merge','deploy','manageSecrets'])
+    assert.ok(script.includes("'"+name+"'"),name);
+  assert.ok(script.includes('mutatingPermissions.every'));
+  assert.ok(script.includes('profile.permissions?.[key]===false'));
+});
+test('dashboard does not claim knowledge of live agent or Supervisor state',()=>{
+  assert.doesNotMatch(html,/عامل‌های RuFlo در Proffera فعال نشده‌اند/);
+  assert.ok(html.includes('وضعیت عملیاتی عامل‌ها'));
+  assert.ok(script.includes('وضعیت واقعی عامل‌ها یا Supervisor تأیید نشده'));
+});

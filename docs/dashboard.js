@@ -107,11 +107,12 @@
     const profile=await getJson(PROFILE_URL);
     if(profile?.id!=='proffera'||profile.repository!=='ibboabdoli-ai/Proffera'||typeof profile.connected!=='boolean')
       throw Error('پروفایل قابل تأیید نیست');
-    const off=!profile.connected&&profile.mode==='read_only'&&profile.permissions?.write===false&&profile.permissions?.merge===false&&profile.permissions?.deploy===false;
-    set('connectionValue',off?'قطع':profile.connected?'متصل':'نامشخص');
-    set('connectionCaption',off?'پروفایل اصلی فقط‌خواندنی است':profile.connected?'هشدار: پروفایل متصل شده است':'مجوزها نیاز به بررسی دارند');
-    set('policyTitle',off?'Proffera: اتصال غیرفعال و فقط‌خواندنی':profile.connected?'هشدار: اتصال در پروفایل فعال است':'پروفایل نیازمند بررسی');
-    set('policyText',off?'بر اساس فایل عمومی profiles/proffera.json در شاخه main؛ این صفحه هیچ مجوز اجرایی ندارد.':'وضعیت فعلی را در GitHub بررسی کنید. این داشبورد خودش دسترسی عملیاتی ندارد.');
+    const mutatingPermissions=['write','commit','push','merge','deploy','manageSecrets'];
+    const off=!profile.connected&&profile.mode==='read_only'&&mutatingPermissions.every(key=>profile.permissions?.[key]===false);
+    set('connectionValue',off?'طبق پروفایل: قطع':profile.connected?'طبق پروفایل: متصل':'نامشخص');
+    set('connectionCaption',off?'صرفاً تنظیمات عمومی؛ وضعیت عملیاتی تأیید نشده':profile.connected?'اتصال زنده از اینجا تأیید نمی‌شود':'مجوزها ناسازگار یا ناقص هستند');
+    set('policyTitle',off?'پروفایل عمومی: disconnected و فقط‌خواندنی':profile.connected?'هشدار: در پروفایل connected=true ثبت شده':'پروفایل عمومی نیازمند بررسی امنیتی');
+    set('policyText',off?'این فقط مقدار اعلامی فایل عمومی profiles/proffera.json است؛ وضعیت واقعی عامل‌ها یا Supervisor تأیید نشده.':'پروفایل را در GitHub بررسی کنید. این صفحه قادر به تأیید وضعیت واقعی سرویس یا انجام عملیات نیست.');
   }
   async function refresh(){
     if(busy)return;busy=true;
