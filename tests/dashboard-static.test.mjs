@@ -31,3 +31,16 @@ test('no operational or credential-bearing actions in UI',()=>{
   assert.doesNotMatch(html+js,/api[_-]?key|authorization:\s*|actions\/workflows\/[^'"]*dispatch|workflow_dispatch|merge_pull_request/i);
   assert.ok(css.length>1000);
 });
+
+test('Pages publisher is manual-only and limited to the hub main branch',()=>{
+  const pages=readFileSync(new URL('../.github/workflows/dashboard-pages.yml',import.meta.url),'utf8');
+  assert.match(pages,/workflow_dispatch:/);
+  assert.doesNotMatch(pages,/^\s+push:/m);
+  assert.match(pages,/github\.repository == 'ibboabdoli-ai\/ruflo-hub'/);
+  assert.match(pages,/github\.ref == 'refs\/heads\/main'/);
+  assert.match(pages,/persist-credentials: false/);
+  assert.match(pages,/path: \.\/dashboard/);
+  assert.match(pages,/contents: read/);
+  assert.match(pages,/pages: write/);
+  assert.match(pages,/id-token: write/);
+});

@@ -14,3 +14,27 @@ Review notes:
 - Static UI is **not** a security enforcement boundary around other services.
 
 To test locally: `node --test tests/dashboard-static.test.mjs`.
+
+
+## GitHub Pages publication (owner-controlled)
+
+This repo does not permit this UI to merge code, read private files, run workers,
+or access Proffera's Supervisor. **Only the static `dashboard/` folder** is deployed.
+
+After this PR is reviewed and merged, the repository owner needs to open:
+`https://github.com/ibboabdoli-ai/ruflo-hub/settings/pages`.
+Under **Build and deployment → Source**, select **GitHub Actions**.
+The connected GitHub read/write connector cannot perform this administrative
+Pages setting. Do **not** create a privileged token as a workaround.
+
+Then visit:
+`https://github.com/ibboabdoli-ai/ruflo-hub/actions/workflows/dashboard-pages.yml`,
+choose **Run workflow** on **main**, and verify the hosted job reports success.
+The expected project URL is
+`https://ibboabdoli-ai.github.io/ruflo-hub/` **only after a successful Pages deployment**.
+Do not claim it exists before verifying an actual deployment/URL.
+
+The workflow is intentionally manual-only and runs only from main in the exact
+allowed public repository. It uploads only static local HTML, JS and CSS files,
+with no tokens supplied by the operator. Its short-lived `pages:write` and
+`id-token:write` job permissions exist solely for the GitHub Pages deployment.

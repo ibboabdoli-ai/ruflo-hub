@@ -4,11 +4,15 @@ on:
     paths:
       - dashboard/**
       - tests/dashboard-static.test.mjs
+      - tests/dashboard-behavior.test.mjs
+      - .github/workflows/dashboard-pages.yml
       - .github/workflows/dashboard-static.yml
   push:
     paths:
       - dashboard/**
       - tests/dashboard-static.test.mjs
+      - tests/dashboard-behavior.test.mjs
+      - .github/workflows/dashboard-pages.yml
       - .github/workflows/dashboard-static.yml
 permissions:
   contents: read
