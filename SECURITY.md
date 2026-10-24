@@ -11,3 +11,13 @@ This repository is **public**. Never commit tokens, keys, personal/customer data
 - Review all external actions and packages before installing or executing them.
 - GitHub Free supports private repositories too; public visibility is not required just to avoid a repository subscription.
 
+
+## Paid workflow safety gate (2026-10-19)
+
+Draft PR #1 disables paid Actions workflow steps; current checks use no API secrets.
+A commit-message marker is **not** authorization. Existing repository-level
+Actions secrets, if any, require owner-admin removal or rotation; this was
+**not** performed by the GitHub connector. Future paid experiments require a
+verified protected GitHub Environment with required owner review, an independent
+hard request/token budget, and separate explicit approval for the exact source.
+See [docs/PAID-PILOT-APPROVAL.md](docs/PAID-PILOT-APPROVAL.md).

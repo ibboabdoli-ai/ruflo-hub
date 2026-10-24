@@ -1,0 +1,45 @@
+name: RuFlo - synthetic three-role offline safety regression (no paid calls)
+on:
+  push:
+    branches: [work/ruflo-three-agent-lab-20261018]
+    paths:
+      - scripts/ruflo-tracked-openai-relay.mjs
+      - lib/hybrid-openai.mjs
+      - tests/hybrid-openai.test.mjs
+      - .github/workflows/ruflo-tracked-openai-relay.yml
+permissions:
+  contents: read
+jobs:
+  offline-regression:
+    if: github.repository == 'ibboabdoli-ai/ruflo-hub'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      OPENAI_API_KEY: ''
+      GH_TOKEN: ''
+      GITHUB_TOKEN: ''
+      VERCEL_TOKEN: ''
+      TURSO_DATABASE_URL: ''
+      TURSO_AUTH_TOKEN: ''
+      BLOB_READ_WRITE_TOKEN: ''
+    steps:
+      - name: Checkout isolated lab without persistent credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Set Node.js 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Validate offline policies and bounded provider adapter
+        run: |
+          npm run validate
+          npm test
+          node --check scripts/ruflo-tracked-openai-relay.mjs
+      - name: Check tracked AND untracked files
+        if: always()
+        run: |
+          git diff --exit-code
+          test -z "$(git status --porcelain --untracked-files=all)"
+# Deliberately no paid API step or OPENAI_API_KEY secret reference.
+# Commit-message markers never grant owner authorization.
