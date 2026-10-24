@@ -75,3 +75,7 @@ To use it: open **Actions → RuFlo Hub control (manual) → Run workflow**, sel
 ## Read-only project pilot: Ibbo Receipt AI
 
 [Run the isolated Receipt AI pilot](https://github.com/ibboabdoli-ai/ruflo-hub/actions/workflows/ruflo-receipt-pilot.yml) to test the pinned RuFlo CLI security scanner and run this public repository's unit tests, type checking and lint on a pinned commit without AI provider keys. This does **not** mean live multi-agent LLM review is enabled. See [pilot scope](docs/RECEIPT-PILOT.fa.md).
+
+## Read-only فارسی dashboard
+
+The static [Persian observer dashboard](docs/index.html) displays public GitHub PR/check metadata only. It never starts RuFlo agents or connects to the Proffera Supervisor. See [usage and GitHub Pages opt-in instructions](docs/DASHBOARD.fa.md). GitHub Pages publishing is disabled until the repository owner enables it in Settings → Pages.
