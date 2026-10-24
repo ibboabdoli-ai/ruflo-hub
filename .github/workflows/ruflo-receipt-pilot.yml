@@ -119,6 +119,12 @@ jobs:
       - name: TypeScript check
         working-directory: receipt
         run: npm run typecheck
+      - name: Supply standard Next.js 15 ESLint configuration to disposable checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e receipt/eslint.config.mjs
+          cp hub/locks/receipt-ai/eslint.config.mjs receipt/eslint.config.mjs
       - name: ESLint
         working-directory: receipt
         run: npm run lint

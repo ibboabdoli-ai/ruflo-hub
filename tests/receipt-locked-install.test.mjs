@@ -14,6 +14,7 @@ test('native receipt test job uses a stored integrity lock and npm ci only',()=>
   assert.match(native,/persist-credentials: false/);
   assert.match(native,/fa9ff4aecabdaeb05f2be54d4b7d649086d0fdd2/);
   assert.match(native,/OPENAI_API_KEY: ''/);
+  assert.match(native,/cp hub\/locks\/receipt-ai\/eslint\.config\.mjs receipt\/eslint\.config\.mjs/);
 });
 test('committed lock has pinned resolved versions and integrity hashes',()=>{
   assert.equal(lock.lockfileVersion,3);
