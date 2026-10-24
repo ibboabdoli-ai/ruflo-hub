@@ -1,0 +1,28 @@
+name: Validate static read-only RuFlo dashboard
+on:
+  pull_request:
+    paths:
+      - dashboard/**
+      - tests/dashboard-static.test.mjs
+      - .github/workflows/dashboard-static.yml
+  push:
+    paths:
+      - dashboard/**
+      - tests/dashboard-static.test.mjs
+      - .github/workflows/dashboard-static.yml
+permissions:
+  contents: read
+jobs:
+  dashboard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - run: node --check dashboard/app.js
+      - run: node --test tests/dashboard-static.test.mjs
+      - run: npm run validate && npm test
