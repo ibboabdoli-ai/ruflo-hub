@@ -54,3 +54,14 @@ test('oversized frame discarded, subsequent ping survives',()=>{
   const {replies}=execute('x'.repeat(10000)+'\n'+call(9,'ping',{}));
   assert.deepEqual(replies.map(x=>x.id),[9]);
 });
+
+test('different SHA is rejected before accepting MCP requests',()=>{
+  const child=spawnSync(process.execPath,
+    ['--import',resolve('tests/fixtures/proffera-public-fetch-fixture.mjs'),target],{
+    input:call(1,'tools/call',{name:'proffera_observe_public_pr_941'}),
+    encoding:'utf8',timeout:10000,
+    env:{PATH:process.env.PATH,PROFFERA_EXPECTED_SHA:'a'.repeat(40),PROFFERA_TEST_MODE:'good',NODE_OPTIONS:''}
+  });
+  assert.equal(child.status,1);
+  assert.equal(child.stdout,'');
+});

@@ -5,9 +5,9 @@
  */
 import {inspectPublicProfferaPr} from './inspect-public-proffera-pr.mjs';
 
-const EXPECTED=process.env.PROFFERA_EXPECTED_SHA;
-if(typeof EXPECTED!=='string'||!/^[0-9a-f]{40}$/.test(EXPECTED))
-  throw Error('An exact pinned PR head SHA is required');
+const EXPECTED='9ac8b38df37cdcb8a917ea4c10f2cc9f79a750ca';
+if(process.env.PROFFERA_EXPECTED_SHA!==EXPECTED)
+  throw Error('Expected PR head is not the reviewed pinned SHA');
 
 const TOOL='proffera_observe_public_pr_941';
 const PROTOCOL='2024-11-05';
