@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
+import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 const SHA='9ac8b38df37cdcb8a917ea4c10f2cc9f79a750ca';
 const target=resolve('scripts/proffera-public-mcp.mjs');
@@ -64,4 +65,10 @@ test('different SHA is rejected before accepting MCP requests',()=>{
   });
   assert.equal(child.status,1);
   assert.equal(child.stdout,'');
+});
+
+test('public MCP smoke does not forward the runner temporary-directory environment',()=>{
+  const smoke=readFileSync(resolve('scripts/proffera-public-mcp-smoke.mjs'),'utf8');
+  assert.doesNotMatch(smoke,/\\bTMPDIR\\b/);
+  assert.match(smoke,/env:safeEnv/);
 });

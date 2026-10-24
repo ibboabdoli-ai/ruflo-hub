@@ -5,7 +5,7 @@ import {resolve} from 'node:path';
 const sha=process.env.PROFFERA_EXPECTED_SHA;
 if(!/^[0-9a-f]{40}$/.test(sha||''))throw Error('Pinned expected SHA missing');
 const safeEnv={PATH:process.env.PATH||'',HOME:process.env.HOME||'',
-  TMPDIR:process.env.TMPDIR||'',PROFFERA_EXPECTED_SHA:sha,NODE_OPTIONS:''};
+  PROFFERA_EXPECTED_SHA:sha,NODE_OPTIONS:''};
 const child=spawn(process.execPath,[resolve('scripts/proffera-public-mcp.mjs')],
   {env:safeEnv,stdio:['pipe','pipe','pipe']});
 const pending=new Map();let lineBuffer='',counter=0;
