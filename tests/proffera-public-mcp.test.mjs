@@ -6,21 +6,10 @@ const SHA='9ac8b38df37cdcb8a917ea4c10f2cc9f79a750ca';
 const target=resolve('scripts/proffera-public-mcp.mjs');
 const call=(id,method,params)=>JSON.stringify({jsonrpc:'2.0',id,method,params})+'\n';
 function execute(frames,{mode='good',expected=SHA}={}){
-  const fixture={number:941,state:'open',draft:false,merged:false,changed_files:40,
-    head:{sha:mode==='stale'?'a'.repeat(40):SHA},base:{repo:{full_name:'ibboabdoli-ai/Proffera'}}};
-  const checks={total_count:2,check_runs:[
-    {head_sha:SHA,name:'validation',status:'completed',conclusion:'success'},
-    {head_sha:SHA,name:'second',status:'completed',conclusion:'skipped'}]};
-  const mock=[
-    'let calls=0;globalThis.fetch=async()=>{calls++;',
-    mode==='403'
-      ? 'return {ok:false,status:403,json:async()=>({private_secret:"NO_LEAK"})};'
-      : 'return {ok:true,status:200,json:async()=>calls===1?'+JSON.stringify(fixture)+':'+JSON.stringify(checks)+'};',
-    '};process.on("exit",()=>{if(calls>'+ (mode==='403'?1:2) +')process.stderr.write("MORE_THAN_ALLOWED_GETS")});'
-  ].join('');
-  const child=spawnSync(process.execPath,['--import','data:text/javascript,'+encodeURIComponent(mock),target],{
+  const child=spawnSync(process.execPath,
+    ['--import',resolve('tests/fixtures/proffera-public-fetch-fixture.mjs'),target],{
     input:frames,encoding:'utf8',timeout:12000,maxBuffer:1024*1024,
-    env:{PATH:process.env.PATH,PROFFERA_EXPECTED_SHA:expected,NODE_OPTIONS:''}
+    env:{PATH:process.env.PATH,PROFFERA_EXPECTED_SHA:expected,PROFFERA_TEST_MODE:mode,NODE_OPTIONS:''}
   });
   assert.ifError(child.error);
   assert.equal(child.signal,null);
@@ -58,7 +47,7 @@ test('403 and stale SHA stop with generic NOT VERIFIED and no response-body echo
     assert.equal(replies.length,1);
     assert.equal(replies[0].error.code,-32001);
     assert.equal(replies[0].error.message,'NOT VERIFIED: public metadata unavailable');
-    assert.doesNotMatch(JSON.stringify(replies)+stderr,/NO_LEAK/);
+    assert.doesNotMatch(JSON.stringify(replies)+stderr,/SIMULATED_BODY_NOT_FOR_OUTPUT/);
   }
 });
 test('oversized frame discarded, subsequent ping survives',()=>{
