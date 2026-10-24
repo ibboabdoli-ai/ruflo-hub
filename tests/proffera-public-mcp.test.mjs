@@ -69,6 +69,6 @@ test('different SHA is rejected before accepting MCP requests',()=>{
 
 test('public MCP smoke does not forward the runner temporary-directory environment',()=>{
   const smoke=readFileSync(resolve('scripts/proffera-public-mcp-smoke.mjs'),'utf8');
-  assert.doesNotMatch(smoke,/\\bTMPDIR\\b/);
+  assert.doesNotMatch(smoke,/TMPDIR/);
   assert.match(smoke,/env:safeEnv/);
 });
