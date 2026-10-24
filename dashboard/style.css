@@ -7,3 +7,9 @@
 .hint{color:#e6b878!important;font-size:12px!important;margin-top:8px}.empty{color:#8aa2bb;font-size:13px;line-height:1.7}
 @media(max-width:850px){.section-head{align-items:start;flex-direction:column}}
 @media(max-width:440px){.stats{gap:8px}.stats article{padding:15px}.stats article strong{font-size:23px}.check-item,.pr-item{flex-direction:column;gap:3px}}
+
+/* Text-only classification; errors and cancellations remain distinct. */
+.check-item b.pending-result{color:#e6b878}
+#supervisor-alert{font-size:13px;line-height:2;border-top:1px solid #26364a;padding-top:12px;overflow-wrap:anywhere}
+.stats article strong{overflow-wrap:anywhere}
+@media(max-width:440px){.stats article strong{font-size:21px}}

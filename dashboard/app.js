@@ -22,16 +22,23 @@ function checkReport(data,sha,limit){
   return {items:data.check_runs,total:data.total_count,partial:data.total_count>limit};
 }
 function result(item){
-  if(item.status!=='completed')return {label:'در جریان',kind:'bad'};
-  if(item.conclusion==='success')return {label:'موفق',kind:'good'};
-  if(['skipped','neutral'].includes(item.conclusion))return {label:'اجرا نشده',kind:'neutral'};
-  if(item.conclusion==='cancelled')return {label:'لغوشده',kind:'bad'};
-  return {label:'ناموفق / نامشخص',kind:'bad'};
+  if(item.status!=='completed')return {label:'در جریان',kind:'pending'};
+  if(item.conclusion==='success')return {label:'موفق',kind:'success'};
+  if(item.conclusion==='failure'||item.conclusion==='timed_out'||item.conclusion==='startup_failure'||item.conclusion==='action_required')return {label:'ناموفق',kind:'failed'};
+  if(item.conclusion==='cancelled')return {label:'لغوشده',kind:'cancelled'};
+  if(item.conclusion==='skipped')return {label:'اجرا نشده',kind:'skipped'};
+  if(item.conclusion==='neutral')return {label:'خنثی / نامشخص',kind:'unknown'};
+  return {label:'نامشخص',kind:'unknown'};
+}
+function tally(items){
+  const totals={success:0,failed:0,cancelled:0,skipped:0,pending:0,unknown:0};
+  for(const item of items)totals[result(item).kind]++;
+  return totals;
 }
 function appendCheck(container,item,prefix){
   const line=document.createElement('div');line.className='check-item';
   const name=document.createElement('span');name.textContent=prefix+' · '+item.name;
-  const state=document.createElement('b');const r=result(item);state.textContent=r.label;if(r.kind==='bad')state.className='bad';if(r.kind==='neutral')state.className='neutral-result';
+  const state=document.createElement('b');const r=result(item);state.textContent=r.label;if(r.kind==='failed'||r.kind==='cancelled')state.className='bad';if(r.kind==='skipped'||r.kind==='unknown')state.className='neutral-result';if(r.kind==='pending')state.className='pending-result';
   line.append(name,state);container.append(line);
 }
 function verifyBranch(source,branch){
@@ -80,12 +87,16 @@ async function loadSupervisor(){
   const list=$('supervisor-checks');list.replaceChildren();
   if(!selected.length)empty('supervisor-checks','در نتایج دریافت‌شده، بررسی مرتبطی پیدا نشد.');
   for(const item of selected)appendCheck(list,item,'PR #941');
+  const totals=tally(report.items);
+  const counts='موفق: '+totals.success+'، ناموفق: '+totals.failed+'، لغوشده: '+totals.cancelled+'، اجرا نشده: '+totals.skipped+'، در جریان: '+totals.pending+'، نامشخص: '+totals.unknown;
+  const reason=totals.failed?'اجرای ناموفق وجود دارد؛ جزئیات را در GitHub بررسی کن.':totals.cancelled?'اجرای لغوشده وجود دارد؛ لغو شدن لزوماً به معنی شکست نهایی PR نیست.':totals.pending?'برخی بررسی‌ها هنوز در جریان‌اند.':totals.unknown?'نتیجه بعضی بررسی‌ها نامشخص است.':totals.skipped?'برخی بررسی‌ها اجرا نشده‌اند؛ این لزوماً خطا نیست.':'در نتایج خوانده‌شده شکست یا لغو دیده نشد.';
+  set('supervisor-alert',(report.partial?'شواهد ناقص؛ ':'گزارش عمومی PR #941؛ ')+counts+'. '+reason+' این گزارش تأیید آمادگی ادغام یا سلامت زنده Supervisor نیست.');
   if(report.partial){const p=document.createElement('p');p.className='hint';p.textContent='این شواهد ناقص‌اند؛ '+report.items.length+' از '+report.total+' بررسی دریافت شده است.';list.append(p)}
 }
 function reset(){
-  for(const id of ['success','failed','prs-total','hub-main','proffera-main','hub-checks','proffera-checks','hub-prs','proffera-prs'])set(id,'—');
+  for(const id of ['success','failed','cancelled','skipped','pending','unknown','prs-total','hub-main','proffera-main','hub-checks','proffera-checks','hub-prs','proffera-prs'])set(id,'—');
   for(const id of ['hub-state','proffera-state','connection'])set(id,'نامشخص');
-  set('profile-state','وضعیت هنوز تأیید نشده است.');set('supervisor-state','اطلاعات عمومی PR هنوز دریافت نشده است.');
+  set('profile-state','وضعیت هنوز تأیید نشده است.');set('supervisor-state','اطلاعات عمومی PR هنوز دریافت نشده است.');set('supervisor-alert','نتیجه بررسی PR #941 نامشخص است.');
   empty('hub-pr-list','داده‌ای دریافت نشده است.');empty('proffera-pr-list','داده‌ای دریافت نشده است.');
   empty('check-list','داده‌ای دریافت نشده است.');empty('supervisor-checks','شواهد بررسی نشده‌اند.');
 }
@@ -96,7 +107,7 @@ async function refresh(){
     const tasks=[...SOURCES.map(loadMain),...SOURCES.map(loadPRs),loadProfile(),loadSupervisor()];
     const results=await Promise.allSettled(tasks);
     const mainReports=results.slice(0,2),prReports=results.slice(2,4);
-    const issues=[];let passes=0,attention=0,complete=0,partial=false;
+    const issues=[];const totals={success:0,failed:0,cancelled:0,skipped:0,pending:0,unknown:0};let complete=0,partial=false;
     const list=$('check-list');list.replaceChildren();
     for(let i=0;i<mainReports.length;i++){
       const outcome=mainReports[i];const source=SOURCES[i];
@@ -104,7 +115,7 @@ async function refresh(){
         issues.push(source.label+' main/CI: دریافت تأیید نشد');set(source.prefix+'-state','نامشخص');continue;
       }
       complete++;const report=outcome.value;partial ||=report.partial;
-      for(const c of report.items){const r=result(c);if(r.kind==='good')passes++;else if(r.kind==='bad')attention++;}
+      for(const c of report.items)totals[result(c).kind]++;
       for(const c of report.items.slice(0,6))appendCheck(list,c,source.label+' main');
       if(report.partial||report.items.length>6){
         const p=document.createElement('p');p.className='hint';
@@ -112,7 +123,7 @@ async function refresh(){
       }
     }
     if(!list.childNodes.length)empty('check-list','هیچ بررسی معتبری دریافت نشد.');
-    if(complete){const suffix=(complete<2||partial)?' (ناقص)':'';set('success',passes+suffix);set('failed',attention+suffix)}
+    if(complete){const suffix=(complete<2||partial)?' (ناقص)':'';for(const kind of Object.keys(totals))set(kind,totals[kind]+suffix)}
     if(partial)issues.push('بررسی‌های main فقط به‌صورت نمونه قابل مشاهده‌اند');
     let openPRs=0,prSources=0,prAtLimit=false;
     for(let i=0;i<2;i++){

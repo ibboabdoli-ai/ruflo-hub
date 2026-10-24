@@ -46,3 +46,16 @@ test('owner-triggered Pages publisher remains manual only',()=>{
   assert.match(pages,/pages: write/);
   assert.match(pages,/id-token: write/);
 });
+
+test('CI categories and Supervisor alert remain separate and explicitly evidence-based',()=>{
+  for(const id of ['success','failed','cancelled','skipped','pending','unknown','supervisor-alert'])
+    assert.match(html,new RegExp('id="'+id+'"'));
+  assert.match(js,/item\.conclusion==='cancelled'/);
+  assert.match(js,/item\.conclusion==='skipped'/);
+  assert.match(js,/item\.conclusion==='failure'/);
+  assert.match(js,/item\.conclusion==='neutral'/);
+  assert.match(js,/function tally\(items\)/);
+  assert.match(js,/set\('supervisor-alert'/);
+  assert.match(html,/تأیید فعالیت لحظه‌ای Supervisor|نه مانیتورینگ مستقیم Supervisor/);
+  assert.doesNotMatch(js,/\binnerHTML\b/);
+});

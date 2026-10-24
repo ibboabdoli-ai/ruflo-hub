@@ -30,3 +30,29 @@ https://github.com/ibboabdoli-ai/ruflo-hub/actions/workflows/dashboard-pages.yml
 Choose **Run workflow → main**, inspect the deployment, and open https://ibboabdoli-ai.github.io/ruflo-hub/ . A merge alone does **not** update the existing Pages site. Do not automate Pages deployment without separate authorization.
 
 No user interface operation can change GitHub or Proffera. Future private Supervisor status would require a separately reviewed, opt-in architecture and explicit authorization.
+
+## Dashboard v3 — separated checks and bounded PR #941 warning
+
+The main-branch sample displays **six independent categories**: successful, failed
+(including `timed_out`, `startup_failure`, and `action_required`), cancelled,
+skipped, still running, and unknown/neutral. Skipped is **not** a failure,
+and cancellation is **not** proof of a failed or blocked merge.
+
+A source that returns no verified report leaves all counts as unknown (`—`);
+if only one repository succeeds or any branch has more check records than the
+20-run cap, **every** displayed category has the `ناقص` (partial) suffix.
+The totals are counts of returned **check runs, not distinct pipelines**, and
+do not establish end-to-end readiness for either repository.
+
+The independent PR #941 section reviews only the immutable PR head SHA
+reported by GitHub. It reports a per-outcome summary and a human-readable
+warning for failures, cancellations, skipped work, pending status, or unknowns.
+A cancelled E2E run can coexist with a successful independent run; no
+overall merge conclusion is inferred. For failed API calls, mismatched SHAs,
+or truncated check responses, the PR alert stays **نامشخص** rather than
+showing a stale successful summary.
+
+All source strings are rendered with `textContent`; no dynamic GitHub HTML
+or URL is trusted. New tests exercise all six categories, partial/403 results,
+mixed cancelled/skipped PR outcomes, and invalid PR check SHAs. Static
+hosting / publication stays **manual-only** via `dashboard-pages.yml`.

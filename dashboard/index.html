@@ -28,9 +28,13 @@
       <button id="refresh" type="button">↻ دریافت تازه‌ترین وضعیت</button>
     </header>
     <div id="notice" role="status" aria-live="polite">برای دریافت داده‌ها آماده است.</div>
-    <section class="stats" aria-label="شاخص‌های اصلی">
-      <article><span>بررسی‌های موفق main</span><strong id="success">—</strong><small>فقط نتایج خوانده‌شده</small></article>
-      <article><span>نیازمند توجه main</span><strong id="failed">—</strong><small>شکست، لغو یا در جریان</small></article>
+    <section class="stats" aria-label="نتایج خوانده‌شده CI در شاخه main">
+      <article><span>موفق</span><strong id="success">—</strong><small>فقط بررسی‌های دریافت‌شده</small></article>
+      <article><span>ناموفق</span><strong id="failed">—</strong><small>شکست یا خطای اجرای بررسی</small></article>
+      <article><span>لغوشده</span><strong id="cancelled">—</strong><small>لغو به معنی شکست قطعی نیست</small></article>
+      <article><span>اجرا نشده</span><strong id="skipped">—</strong><small>Skipped، نه الزاماً مشکل</small></article>
+      <article><span>در جریان</span><strong id="pending">—</strong><small>هنوز نتیجه نهایی ندارد</small></article>
+      <article><span>نامشخص / خنثی</span><strong id="unknown">—</strong><small>نیازمند بررسی بیشتر</small></article>
       <article><span>PRهای بازِ نمایش‌داده‌شده</span><strong id="prs-total">—</strong><small>حداکثر ۵ مورد برای هر پروژه</small></article>
       <article><span>مجوز اتصال Proffera</span><strong id="connection">نامشخص</strong><small>از پروفایل عمومی، نه شبکه واقعی</small></article>
     </section>
@@ -77,6 +81,7 @@
           <span class="pill neutral">شواهد PR · نه سلامت زنده</span>
           <h3>Supervisor — PR #941</h3>
           <p id="supervisor-state">اطلاعات عمومی PR هنوز دریافت نشده است.</p>
+          <p id="supervisor-alert" aria-live="polite">نتیجه بررسی PR #941 نامشخص است.</p>
           <div id="supervisor-checks" class="check-list"><p class="muted">شواهد بررسی نشده‌اند.</p></div>
           <a href="https://github.com/ibboabdoli-ai/Proffera/pull/941" target="_blank" rel="noopener noreferrer">بررسی PR #941 ↗</a>
         </article>
