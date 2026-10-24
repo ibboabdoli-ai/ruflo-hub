@@ -125,9 +125,9 @@ jobs:
           set -euo pipefail
           test ! -e receipt/eslint.config.mjs
           cp hub/locks/receipt-ai/eslint.config.mjs receipt/eslint.config.mjs
-      - name: ESLint
-        working-directory: receipt
-        run: npm run lint
+      - name: Run full ESLint and gate unexpected findings against immutable source baseline
+        shell: bash
+        run: node hub/scripts/receipt-eslint-baseline.mjs receipt
       - name: Summary
         shell: bash
         run: |

@@ -25,3 +25,21 @@ This only fixes the existing SonarCloud `githubactions:S8543` issue on the
 Hub's Receipt AI workflow; it does not enable Receipt AI operations, install
 RuFlo into a production environment, change the Supervisor, or authorize
 any deployment.
+
+## Honest upstream lint baseline
+
+The pinned Receipt AI source commit has **no ESLint config**, and when its
+Next.js 15 recommended `next/core-web-vitals` and `next/typescript` rules are
+provided only inside the disposable checkout, ESLint reports exactly:
+- 1 existing error: `app/receipts/page.tsx:214:11`,
+  `@next/next/no-html-link-for-pages`
+- 1 existing warning: `postcss.config.mjs:1:1`,
+  `import/no-anonymous-default-export`
+
+They belong to the **unchanged, immutable external Receipt source**, not this
+Hub security fix. We **do not** claim external lint is clean: the runner executes
+full ESLint and `scripts/receipt-eslint-baseline.mjs` rejects any added,
+missing, moved or severity-changed findings. The intended upstream resolution
+is to fix both in the Receipt AI project and update its pinned SHA/lock in a
+separate owner-approved change. Do not suppress the rules globally or change
+the source silently.
