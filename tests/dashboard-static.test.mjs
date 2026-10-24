@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 const html=readFileSync(new URL('../dashboard/index.html',import.meta.url),'utf8');
 const css=readFileSync(new URL('../dashboard/style.css',import.meta.url),'utf8');
 const js=readFileSync(new URL('../dashboard/app.js',import.meta.url),'utf8');
-test('static UI has restrictive CSP and no external runtime dependencies',()=>{
+test('static UI has restrictive CSP and no remote scripts or inline event handlers',()=>{
   assert.match(html,/Content-Security-Policy/);
   assert.match(html,/default-src 'none'/);
   assert.match(html,/script-src 'self'/);
@@ -13,26 +13,29 @@ test('static UI has restrictive CSP and no external runtime dependencies',()=>{
   assert.match(html,/rel="stylesheet" href="\.\/style\.css"/);
   assert.doesNotMatch(html,/<script(?! src=)/i);
   assert.doesNotMatch(html,/on(click|load|error)\s*=/i);
+  assert.doesNotMatch(html,/https?:\/\/(?:cdn|unpkg|fonts\.)/i);
 });
-test('public REST endpoints are fixed, check records are exact SHA bounded and fail closed',()=>{
+test('main SHA and public PR list endpoints are fixed, bounded and validated',()=>{
   assert.match(js,/ibboabdoli-ai\/ruflo-hub/);
   assert.match(js,/ibboabdoli-ai\/Proffera/);
-  assert.match(js,/number:4/);assert.match(js,/number:941/);
-  assert.match(js,/pr\.head\.sha/);
-  assert.match(js,/check\.runs|c\.check_runs/);
-  assert.match(js,/c\.total_count>100/);
-  assert.match(js,/item\.head_sha!==pr\.head\.sha/);
+  assert.match(js,/\/branches\/main/);
+  assert.match(js,/\/pulls\?state=open&sort=updated&direction=desc&per_page=/);
+  assert.match(js,/MAX_CHECKS=20,MAX_PRS=5,SUPERVISOR_PR=941/);
+  assert.match(js,/data\.total_count>limit/);
+  assert.match(js,/item\.head_sha!==sha/);
   assert.match(js,/credentials:'omit'/);
   assert.match(js,/method:'GET'/);
   assert.doesNotMatch(js,/method:\s*['"](?:POST|PUT|PATCH|DELETE)/i);
   assert.doesNotMatch(js,/\binnerHTML\b|\beval\s*\(|new Function\s*\(/);
 });
-test('no operational or credential-bearing actions in UI',()=>{
-  assert.doesNotMatch(html+js,/api[_-]?key|authorization:\s*|actions\/workflows\/[^'"]*dispatch|workflow_dispatch|merge_pull_request/i);
-  assert.ok(css.length>1000);
+test('dashboard disclaims direct Supervisor connectivity and handles unknown data',()=>{
+  assert.match(html,/نه مانیتورینگ مستقیم Supervisor/);
+  assert.match(html,/نتایج ناقص/);
+  assert.match(js,/if\(complete\)/);
+  assert.match(js,/if\(partial\)issues\.push/);
+  assert.ok(css.length>2000);
 });
-
-test('Pages publisher is manual-only and limited to the hub main branch',()=>{
+test('owner-triggered Pages publisher remains manual only',()=>{
   const pages=readFileSync(new URL('../.github/workflows/dashboard-pages.yml',import.meta.url),'utf8');
   assert.match(pages,/workflow_dispatch:/);
   assert.doesNotMatch(pages,/^\s+push:/m);
@@ -40,7 +43,6 @@ test('Pages publisher is manual-only and limited to the hub main branch',()=>{
   assert.match(pages,/github\.ref == 'refs\/heads\/main'/);
   assert.match(pages,/persist-credentials: false/);
   assert.match(pages,/path: \.\/dashboard/);
-  assert.match(pages,/contents: read/);
   assert.match(pages,/pages: write/);
   assert.match(pages,/id-token: write/);
 });

@@ -1,40 +1,32 @@
-# RuFlo Hub Public Read-Only Dashboard
+# RuFlo Hub — Public read-only dashboard v2
 
-Open `dashboard/index.html` in a browser, or use a static hosting service after security review and publication approval. No build, package install, API token, persistent server, or subscription is needed.
+GitHub Pages: https://ibboabdoli-ai.github.io/ruflo-hub/ (published previously by the owner; publish this revision **manually** after review).
 
-This is a static Persian UI. It reads exactly two public PRs from GitHub REST: `ibboabdoli-ai/ruflo-hub#4` and `ibboabdoli-ai/Proffera#941`, plus the public `profiles/proffera.json` file on main. It shows the PR state and exact-head check-run data, refusing to display mismatched or truncated results. When GitHub rate limits an anonymous request, the UI shows an unknown or incomplete state rather than claiming success.
+## Sources and claims
 
-**No live RuFlo agents or Proffera Supervisor connection.** The dashboard has no write operations, credentials, GitHub write scopes, paid model execution, webhooks, merge controls, deployment actions, or arbitrary repository search.
+The static Persian dashboard reads **only public GitHub endpoints**, without an account, credential, paid model, agents, writes, webhooks, or access to Proffera private source/Supervisor.
 
-Review notes:
-- No remote script, stylesheet, or analytics.
-- Strict content security policy blocks inline JS and off-allowlist origins.
-- Uses `textContent` and DOM nodes rather than `innerHTML` for remote strings.
-- The HTML can be hosted under `/dashboard/`; it cannot itself switch on GitHub Pages.
-- Static UI is **not** a security enforcement boundary around other services.
+- Current \`main\` branch SHA and corresponding check runs for exactly \`ibboabdoli-ai/ruflo-hub\` and \`ibboabdoli-ai/Proffera\`.
+- Up to **20 check runs per main branch** (\`filter=latest\`). The GitHub API may report many more: e.g. Proffera historically had over 2,000. A sample is always visibly labeled **ناقص**; its counters are not project-wide CI results. Only up to six of the fetched checks for each project appear in the list.
+- Up to **five open PRs per repository**, sorted by updated time. Counts capped at five are marked \`+\`, never claimed as complete.
+- Public Proffera PR #941 head and selected related check runs. These are **CI evidence about one PR**, not operational telemetry or Supervisor health.
+- RuFlo Hub public \`profiles/proffera.json\` showing read-only, disconnected permissions. It is **not** proof of network isolation of the live system.
 
-To test locally: `node --test tests/dashboard-static.test.mjs`.
+All external content is rendered through DOM \`textContent\`; PR URLs are built from hard-coded public repos and validated numeric PR numbers. No remote CSS/JS is loaded. CSP restricts all browser sources. Fetches are unauthenticated GET with fixed destinations and no automatic refresh/retries. Check runs are verified against the current retrieved SHA; truncated/mismatched/403 responses show **نامشخص** or **ناقص**, never an invented PASS. One refresh may use several anonymous GitHub API requests; frequent clicking may encounter GitHub rate limiting.
 
+## Local / CI verification
 
-## GitHub Pages publication (owner-controlled)
+\`node --check dashboard/app.js && node --test tests/dashboard-static.test.mjs tests/dashboard-behavior.test.mjs\`
 
-This repo does not permit this UI to merge code, read private files, run workers,
-or access Proffera's Supervisor. **Only the static `dashboard/` folder** is deployed.
+The main repo \`npm test\` also runs the tests. The tests use a sandboxed mock DOM and injected read-only fetch implementation to exercise **all-403**, **partial**, **complete**, **mismatched SHA**, **sampled CI**, and **HTML injection** conditions.
 
-After this PR is reviewed and merged, the repository owner needs to open:
-`https://github.com/ibboabdoli-ai/ruflo-hub/settings/pages`.
-Under **Build and deployment → Source**, select **GitHub Actions**.
-The connected GitHub read/write connector cannot perform this administrative
-Pages setting. Do **not** create a privileged token as a workaround.
+## Publication (still manual and owner-controlled)
 
-Then visit:
-`https://github.com/ibboabdoli-ai/ruflo-hub/actions/workflows/dashboard-pages.yml`,
-choose **Run workflow** on **main**, and verify the hosted job reports success.
-The expected project URL is
-`https://ibboabdoli-ai.github.io/ruflo-hub/` **only after a successful Pages deployment**.
-Do not claim it exists before verifying an actual deployment/URL.
+The publisher remains \`/.github/workflows/dashboard-pages.yml\`: \`workflow_dispatch\` only, guarded for \`main\` in the exact repo, with a short-lived GitHub Pages-only OIDC job. It ships only \`dashboard/\`, not project source or secrets.
 
-The workflow is intentionally manual-only and runs only from main in the exact
-allowed public repository. It uploads only static local HTML, JS and CSS files,
-with no tokens supplied by the operator. Its short-lived `pages:write` and
-`id-token:write` job permissions exist solely for the GitHub Pages deployment.
+Once PR review and hosted checks pass and the PR has been merged, the owner visits:
+https://github.com/ibboabdoli-ai/ruflo-hub/actions/workflows/dashboard-pages.yml
+
+Choose **Run workflow → main**, inspect the deployment, and open https://ibboabdoli-ai.github.io/ruflo-hub/ . A merge alone does **not** update the existing Pages site. Do not automate Pages deployment without separate authorization.
+
+No user interface operation can change GitHub or Proffera. Future private Supervisor status would require a separately reviewed, opt-in architecture and explicit authorization.
