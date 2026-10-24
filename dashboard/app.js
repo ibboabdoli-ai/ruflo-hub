@@ -87,11 +87,18 @@ async function loadSupervisor(){
   const list=$('supervisor-checks');list.replaceChildren();
   if(!selected.length)empty('supervisor-checks','در نتایج دریافت‌شده، بررسی مرتبطی پیدا نشد.');
   for(const item of selected)appendCheck(list,item,'PR #941');
+  if(report.partial){
+    set('supervisor-alert','نتیجه بررسی PR #941 نامشخص است: تنها '+report.items.length+' از '+report.total+' رکورد برای HEAD انتخابی خوانده شد؛ احتمال دارد بررسی‌های دیده‌نشده ناموفق یا لغوشده باشند. شواهد ناقص‌اند و آمادگی ادغام یا سلامت زنده Supervisor تأیید نشده است.');
+    const note=document.createElement('p');note.className='hint';
+    note.textContent='شواهد PR #941 ناقص: '+report.items.length+' از '+report.total+' رکورد. هشدار به‌صورت نامشخص باقی می‌ماند.';
+    list.append(note);
+    return;
+  }
   const totals=tally(report.items);
   const counts='موفق: '+totals.success+'، ناموفق: '+totals.failed+'، لغوشده: '+totals.cancelled+'، اجرا نشده: '+totals.skipped+'، در جریان: '+totals.pending+'، نامشخص: '+totals.unknown;
   const reason=totals.failed?'اجرای ناموفق وجود دارد؛ جزئیات را در GitHub بررسی کن.':totals.cancelled?'اجرای لغوشده وجود دارد؛ لغو شدن لزوماً به معنی شکست نهایی PR نیست.':totals.pending?'برخی بررسی‌ها هنوز در جریان‌اند.':totals.unknown?'نتیجه بعضی بررسی‌ها نامشخص است.':totals.skipped?'برخی بررسی‌ها اجرا نشده‌اند؛ این لزوماً خطا نیست.':'در نتایج خوانده‌شده شکست یا لغو دیده نشد.';
   set('supervisor-alert',(report.partial?'شواهد ناقص؛ ':'گزارش عمومی PR #941؛ ')+counts+'. '+reason+' این گزارش تأیید آمادگی ادغام یا سلامت زنده Supervisor نیست.');
-  if(report.partial){const p=document.createElement('p');p.className='hint';p.textContent='این شواهد ناقص‌اند؛ '+report.items.length+' از '+report.total+' بررسی دریافت شده است.';list.append(p)}
+
 }
 function reset(){
   for(const id of ['success','failed','cancelled','skipped','pending','unknown','prs-total','hub-main','proffera-main','hub-checks','proffera-checks','hub-prs','proffera-prs'])set(id,'—');

@@ -39,6 +39,7 @@ async function render(mode){
           {head_sha:PR941,name:'Run bounded Codex Worker',status:'completed',conclusion:'skipped'}
         ]});
         if(mode==='pr-invalid')return ok({total_count:1,check_runs:[{head_sha:HUB,name:'Governance',status:'completed',conclusion:'success'}]});
+        if(mode==='pr-truncated')return ok({total_count:101,check_runs:Array.from({length:100},(_,i)=>({head_sha:PR941,name:'success '+i,status:'completed',conclusion:'success'}))});
         return ok({total_count:1,check_runs:[{head_sha:PR941,name:'Governance',status:'completed',conclusion:'success'}]});
       }
       if(isPro&&mode==='wrong-sha')return ok(runItems(HUB));
@@ -121,4 +122,12 @@ test('PR #941 check-run SHA mismatch makes alert unknown rather than successful'
   const v=await render('pr-invalid');
   assert.equal(v.get('supervisor-alert'),'نتیجه بررسی PR #941 نامشخص است.');
   assert.match(v.get('notice'),/شواهد PR #941: دریافت تأیید نشد/);
+});
+
+test('101 PR check runs with 100 apparent successes keep supervisor alert UNKNOWN',async()=>{
+  const v=await render('pr-truncated');
+  assert.match(v.get('supervisor-alert'),/نامشخص است/);
+  assert.match(v.get('supervisor-alert'),/100.*101/);
+  assert.doesNotMatch(v.get('supervisor-alert'),/موفق: 100/);
+  assert.match(v.nodes('supervisor-checks').at(-1).textContent,/ناقص/);
 });
