@@ -1,5 +1,6 @@
 name: RuFlo benchmark - zero-key isolated task coordination
 on:
+  workflow_dispatch:
   push:
     branches:
       - work/ruflo-offline-benchmark-20261025
