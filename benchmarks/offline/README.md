@@ -64,3 +64,16 @@ require two independent, equally budgeted model trials on held-out tasks,
 blinded scoring, provider-level hard spend limit, an owner-reviewed key
 environment and **separate explicit authorization**. Never substitute this
 free test for that evidence.
+
+## Verified hosted runs (2026-10-25 and 2026-10-26)
+
+- [Run 1](https://github.com/ibboabdoli-ai/ruflo-hub/actions/runs/40215336462): 80/80 repository tests pass; direct fixture 4.348 ms; RuFlo MCP bookkeeping 395.822 ms.
+- [Run 2](https://github.com/ibboabdoli-ai/ruflo-hub/actions/runs/40413728346): 80/80 repository tests pass; direct fixture 3.775 ms; RuFlo MCP bookkeeping 398.51 ms.
+- Both runs: 5 defective checks, 7/7 after the same pre-reviewed static patch; 3/3 persisted RuFlo tasks completed; 0 provider calls and 0 source repository edits.
+- These timings exclude installation, measure unequal paths and cannot establish AI coding productivity or a Codex-vs-RuFlo speed ratio.
+
+## Before merge: dependency and security release gate
+
+The CI currently installs `ruflo@3.56.10` with `npm install --no-save --ignore-scripts` in a temporary directory. **Only the top-level package version is fixed; transitive dependency resolution is not locked.** Both hosted runs installed 617 packages and reported deprecated-package warnings (including koa-router, prebuild-install, node-domexception and OpenTelemetry packages). These warnings are not by themselves evidence of exploitable vulnerabilities.
+
+Do not treat this experiment as supply-chain approved until a separately reviewed change adds a committed npm lockfile for the isolated RuFlo dependency tree, installs it using `npm ci --ignore-scripts`, and records an audited dependency/security review. Keep all lockfiles and installed code confined to this lab; do not connect Proffera, Supervisor or production credentials. The passing workflow alone is not a release approval.
