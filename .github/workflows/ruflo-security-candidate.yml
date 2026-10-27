@@ -38,7 +38,7 @@ jobs:
           set -euo pipefail
           npm run validate
           npm test
-      - name: Install exact newer RuFlo candidate in disposable directory
+      - name: Install exact newer RuFlo candidate without unused optional ML dependencies
         shell: bash
         run: |
           set -euo pipefail
@@ -46,17 +46,17 @@ jobs:
           cd "$RUNNER_TEMP/ruflo-candidate"
           npm install --save-exact --ignore-scripts --no-audit --no-fund "ruflo@3.63.3" "@metaharness/router@0.4.0"
           test -s package-lock.json
-          npm ci --ignore-scripts --no-audit --no-fund
+          npm ci --omit=optional --ignore-scripts --no-audit --no-fund
           test -x node_modules/.bin/ruflo
           node -p '"CANDIDATE_VERSION "+require("./node_modules/ruflo/package.json").version'
           sha256sum package-lock.json
           echo "RUFLO_BIN=$RUNNER_TEMP/ruflo-candidate/node_modules/.bin/ruflo" >> "$GITHUB_ENV"
-      - name: Inventory candidate advisories without changing dependencies
+      - name: Audit installed non-optional candidate dependencies without changing packages
         shell: bash
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/ruflo-candidate"
-          npm audit --omit=dev --json > "$RUNNER_TEMP/ruflo-candidate-audit.json" || true
+          npm audit --omit=dev --omit=optional --json > "$RUNNER_TEMP/ruflo-candidate-audit.json" || true
           node --input-type=module <<'NODE'
           import {readFileSync} from 'node:fs';
           const report=JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/ruflo-candidate-audit.json','utf8'));
