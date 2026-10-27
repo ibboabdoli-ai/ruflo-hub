@@ -60,6 +60,15 @@ jobs:
           set -euo pipefail
           cd "$RUNNER_TEMP/ruflo-candidate"
           sha256sum package-lock.json
+      - name: Export reviewed Zod-v4 experimental lock for reproduction
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/ruflo-candidate"
+          echo "8ad21bc4f4a95d756cd9bcfae962625f2e7f03881c7719e25443f73ddbabcc44  package-lock.json" | sha256sum --check
+          echo ZOD4_TRIAL_LOCK_BEGIN
+          cat package-lock.json
+          echo ZOD4_TRIAL_LOCK_END
       - name: Audit installed non-optional candidate dependencies without changing packages
         shell: bash
         run: |
