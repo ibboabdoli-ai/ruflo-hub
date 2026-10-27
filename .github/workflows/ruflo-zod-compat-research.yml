@@ -1,0 +1,71 @@
+name: RuFlo Zod compatibility investigation - isolated read-only
+on:
+  push:
+    branches:
+      - work/ruflo-offline-benchmark-20261025
+    paths:
+      - .github/workflows/ruflo-zod-compat-research.yml
+      - benchmarks/offline/compat/**
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    if: github.repository == 'ibboabdoli-ai/ruflo-hub' && github.ref == 'refs/heads/work/ruflo-offline-benchmark-20261025'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: 'true'
+      OPENAI_API_KEY: ''
+      ANTHROPIC_API_KEY: ''
+      OPENROUTER_API_KEY: ''
+      OLLAMA_API_KEY: ''
+      CODEX_API_KEY: ''
+      GITHUB_TOKEN: ''
+      GH_TOKEN: ''
+      VERCEL_TOKEN: ''
+    steps:
+      - name: Checkout public synthetic repo without credential persistence
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Node.js 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Install pinned audited lab dependency tree in disposable directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ruflo-compat"
+          cp benchmarks/offline/deps/package.json benchmarks/offline/deps/package-lock.json "$RUNNER_TEMP/ruflo-compat/"
+          cd "$RUNNER_TEMP/ruflo-compat"
+          echo "8ad21bc4f4a95d756cd9bcfae962625f2e7f03881c7719e25443f73ddbabcc44  package-lock.json" | sha256sum --check
+          npm ci --omit=optional --ignore-scripts --no-audit --no-fund
+      - name: Inspect only relevant published compiler output, no edits
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUFLO_COMPAT_INSTALL="$RUNNER_TEMP/ruflo-compat" node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          import {join} from 'node:path';
+          const root=process.env.RUFLO_COMPAT_INSTALL;
+          for(const [name,filename,markers] of [
+            ['shared','@claude-flow/shared/dist/core/config/validator.js',['.errors.map','function zodErrorToValidationErrors']],
+            ['security','@claude-flow/security/dist/input-validator.js',['.ip(', 'ZodIssueCode.invalid_string','ctx.defaultError','setErrorMap']]
+          ]){
+            const source=readFileSync(join(root,'node_modules',filename),'utf8');
+            for(const marker of markers){
+              const i=source.indexOf(marker);
+              console.log('COMPAT_SOURCE '+JSON.stringify({
+                name,marker,found:i>=0,
+                excerpt:i<0?'':source.slice(Math.max(0,i-130),Math.min(source.length,i+210))
+              }));
+            }
+          }
+          NODE
+      - name: Verify public source untouched
+        if: always()
+        run: |
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
