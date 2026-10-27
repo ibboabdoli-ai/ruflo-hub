@@ -36,7 +36,17 @@ test('benchmark documents that it does not measure actual Codex/model reasoning'
   assert.match(script,/pre-reviewed-static-reference|identical static reference/);
   assert.match(workflow,/permissions:\s*\n  contents: read/);
   assert.match(workflow,/persist-credentials: false/);
-  assert.match(workflow,/ruflo@3\.56\.10/);
+  const manifest=JSON.parse(readFileSync(new URL('../benchmarks/offline/deps/package.json',import.meta.url),'utf8'));
+  const lock=JSON.parse(readFileSync(new URL('../benchmarks/offline/deps/package-lock.json',import.meta.url),'utf8'));
+  assert.equal(manifest.dependencies.ruflo,'3.56.10');
+  assert.equal(manifest.dependencies['@metaharness/router'],'0.4.0');
+  assert.equal(lock.packages['node_modules/ruflo'].version,'3.56.10');
+  assert.match(lock.packages['node_modules/ruflo'].integrity,/^sha512-/);
+  assert.equal(lock.packages['node_modules/@metaharness/router'].version,'0.4.0');
+  assert.equal(lock.packages['node_modules/ruvector/node_modules/@metaharness/router'].version,'0.3.2');
+  assert.match(workflow,/npm ci --ignore-scripts --no-audit --no-fund/);
+  assert.match(workflow,/sha256sum --check/);
+  assert.doesNotMatch(workflow,/npm install |--package-lock-only/);
   assert.match(workflow,/OPENAI_API_KEY: ''/);
   assert.match(workflow,/ANTHROPIC_API_KEY: ''/);
   assert.doesNotMatch(workflow,/secrets\.|contents: write|pull_request_target|deploy-pages|gh pr merge/);
