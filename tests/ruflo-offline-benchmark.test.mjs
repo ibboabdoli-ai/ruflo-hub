@@ -47,6 +47,10 @@ test('benchmark documents that it does not measure actual Codex/model reasoning'
   assert.equal(manifest.dependencies['@metaharness/router'],'0.4.0');
   // Explicit, lab-only major-version override; not an upstream compatibility guarantee.
   assert.equal(manifest.overrides.zod,'4.6.7');
+  const docs=readFileSync(new URL('../benchmarks/offline/README.md',import.meta.url),'utf8');
+  assert.match(docs,/Compatibility warning/);
+  assert.match(docs,/explicitly declare Zod v3 ranges/);
+  assert.match(docs,/independent source-level compatibility review/);
   assert.equal(lock.packages['node_modules/zod'].version,'4.6.7');
   assert.match(lock.packages['node_modules/zod'].integrity,/^sha512-/);
   assert.ok(Object.entries(lock.packages).every(([p,v])=>
