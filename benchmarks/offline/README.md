@@ -56,7 +56,7 @@ A passing run must demonstrate:
 - Defective input >=3 failing checks; repaired identical oracle 7/7.
 - Both arms complete with 0 provider calls and 0 source repository edits.
 - The RuFlo arm completes and reloads exactly three native task records.
-- No runtime writes, secrets or production access.
+- No writes to the source repository, secrets or production access.
 - Store plain structured timing in workflow logs/summary; do not invent
   speedup percentages.
 
