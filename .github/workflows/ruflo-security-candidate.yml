@@ -47,7 +47,7 @@ jobs:
           # EXPERIMENT ONLY: force Zod v4 across upstream v3 ranges.
           # This violates upstream declared semver and is never adopted
           # without broader compatibility and security review.
-          printf '%s\\n' '{"name":"ruflo-security-candidate","private":true,"overrides":{"zod":"4.6.7"}}' > package.json
+          printf '%s\n' '{"name":"ruflo-security-candidate","private":true,"overrides":{"zod":"4.6.7"}}' > package.json
           npm install --save-exact --ignore-scripts --no-audit --no-fund "ruflo@3.63.3" "@metaharness/router@0.4.0"
           test -s package-lock.json
           npm ci --omit=optional --ignore-scripts --no-audit --no-fund
