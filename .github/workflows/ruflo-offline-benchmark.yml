@@ -61,3 +61,36 @@ jobs:
           set -euo pipefail
           git diff --exit-code
           test -z "$(git status --porcelain)"
+
+      - name: Audit locked RuFlo runtime dependencies for known vulnerabilities
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/ruflo-benchmark-cli"
+          # npm audit has exit code 1 when it reports vulnerabilities.
+          # Parse JSON independently and fail closed on errors or high/critical findings.
+          npm audit --omit=dev --json > "$RUNNER_TEMP/ruflo-dependency-audit.json" || true
+          node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          const raw = readFileSync(process.env.RUNNER_TEMP+'/ruflo-dependency-audit.json','utf8');
+          const report=JSON.parse(raw);
+          if (report.error || !report.metadata?.vulnerabilities) {
+            throw Error('npm audit result unavailable or invalid');
+          }
+          const v=report.metadata.vulnerabilities;
+          const rows=Object.entries(report.vulnerabilities || {})
+            .filter(([,entry])=>['critical','high'].includes(entry.severity))
+            .map(([name,entry])=>name+' ('+entry.severity+')');
+          console.log('RUFLO_DEPENDENCY_AUDIT '+JSON.stringify({counts:v,highOrCriticalPackages:rows}));
+          if (process.env.GITHUB_STEP_SUMMARY) {
+            const {appendFileSync}=await import('node:fs');
+            appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+              '\n## Locked RuFlo dependencies – npm audit\n'+
+              '- High: '+(v.high||0)+'; Critical: '+(v.critical||0)+
+              '; Moderate: '+(v.moderate||0)+'; Low: '+(v.low||0)+'\n'+
+              '- High/critical packages: '+(rows.join(', ')||'none')+'\n');
+          }
+          if ((v.high||0)+(v.critical||0)>0) {
+            throw Error('Dependency audit release gate: high or critical vulnerabilities found');
+          }
+          NODE
