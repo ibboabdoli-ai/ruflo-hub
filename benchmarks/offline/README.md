@@ -144,6 +144,40 @@ reviewed compatibility fix with full negative-input, security and integration
 tests), plus repeatable lockfile and audit verification. Do not use this
 experimental dependency override in Proffera, Supervisor or production.
 
+## Zod 4 compatibility patch feasibility — lab-only (2026-10-27)
+
+The [upstream tagged release v3.63.4](https://github.com/ruvnet/ruflo/releases/tag/v3.63.4)
+still contains the same Zod 3-specific API calls in the relevant source files.
+It is not evidence of an upstream Zod 4 compatibility migration.
+
+A **separate, read-only GitHub Actions workflow**:
+[`ruflo-zod-compat-research.yml`](../../.github/workflows/ruflo-zod-compat-research.yml)
+installs the exact pinned experimental RuFlo 3.63.3 / Zod 4.6.7 dependencies
+in a disposable runner directory, never in the Hub repository or production.
+The guarded [migration feasibility script](compat/zod4-trial.mjs)
+then modifies **only that temporary npm installation**, refusing to edit
+unknown upstream code (exact known pattern-count checks).
+
+The experimental changes cover six Zod 3-to-4 migration sites in
+`@claude-flow/shared` and `@claude-flow/security`: `ZodError.errors`
+to `issues`, `invalid_string` to `invalid_format`, issue `validation`
+to `format`, returning `undefined` for default error-map fallthrough,
+and replacing the removed `z.string().ip()` API with Zod 4 IPv4/IPv6 schemas.
+
+The [independent GitHub run #40486836807](https://github.com/ibboabdoli-ai/ruflo-hub/actions/runs/40486836807)
+passed **20 focused compatibility smoke tests**, including failing configuration
+input, email, IPv4/IPv6, command metacharacters, traversal paths, safe strings,
+and security defaults. All work was contained in the disposable runner;
+no source repository edits or provider calls were needed.
+
+**This proves only that those specific paths can be migrated with a small
+patch. It is NOT a fix to upstream npm packages, a broad regression test,
+a TypeScript type-check of an upstream source patch, a security certification,
+or permission to merge PR #10.** Its main compatibility gate remains
+intentionally red on the unmodified installed upstream package. Require
+an upstream-supported migration and independent code/security review before
+any production reuse.
+
 ## Before merge: dependency and security release gate
 
 Earlier runs installed only `ruflo@3.56.10` with floating transitive versions and reported deprecated-package warnings (including koa-router, prebuild-install, node-domexception and OpenTelemetry packages). These warnings alone do not prove exploitable vulnerabilities.
