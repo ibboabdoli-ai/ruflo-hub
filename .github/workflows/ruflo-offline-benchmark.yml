@@ -67,6 +67,15 @@ jobs:
           name: ruflo-lock-review
           path: ${{ runner.temp }}/ruflo-lock-review/package-lock.json
           retention-days: 7
+      - name: Export synthetic public dependency lock for repository archiving
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/ruflo-lock-review"
+          echo "e5b933a3a500f55da3c81f9d0d3280f334de70998187e29d2e4bdac2de34e1b7  package-lock.json" | sha256sum --check
+          echo RUFLO_LOCK_CONTENT_START_V1
+          cat package-lock.json
+          echo RUFLO_LOCK_CONTENT_END_V1
       - name: Exercise real three-role RuFlo task bookkeeping without inference
         run: node benchmarks/offline/bench.mjs ruflo
       - name: Verify Hub source tree was never mutated
