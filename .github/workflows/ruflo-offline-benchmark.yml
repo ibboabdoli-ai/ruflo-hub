@@ -82,6 +82,16 @@ jobs:
             .filter(([,entry])=>['critical','high'].includes(entry.severity))
             .map(([name,entry])=>name+' ('+entry.severity+')');
           console.log('RUFLO_DEPENDENCY_AUDIT '+JSON.stringify({counts:v,highOrCriticalPackages:rows}));
+          const critical = Object.entries(report.vulnerabilities || {})
+            .filter(([,entry])=>entry.severity==='critical')
+            .map(([name,entry])=>({
+              name, range:entry.range, fixAvailable:entry.fixAvailable,
+              isDirect:entry.isDirect,
+              via:(entry.via||[]).map(x=>typeof x==='string'?{name:x}:
+                {name:x.name,title:x.title,severity:x.severity,
+                 range:x.range,url:x.url,source:x.source})
+            }));
+          console.log('RUFLO_CRITICAL_AUDIT_DETAILS '+JSON.stringify(critical));
           if (process.env.GITHUB_STEP_SUMMARY) {
             const {appendFileSync}=await import('node:fs');
             appendFileSync(process.env.GITHUB_STEP_SUMMARY,
