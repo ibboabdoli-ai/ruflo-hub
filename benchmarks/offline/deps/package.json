@@ -1,8 +1,11 @@
 {
-  "name": "ruflo-lock-review",
+  "name": "ruflo-security-candidate",
   "private": true,
   "dependencies": {
     "@metaharness/router": "0.4.0",
     "ruflo": "3.63.3"
+  },
+  "overrides": {
+    "zod": "4.6.7"
   }
 }
