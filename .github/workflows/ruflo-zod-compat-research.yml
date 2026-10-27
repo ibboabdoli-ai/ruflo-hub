@@ -64,6 +64,14 @@ jobs:
             }
           }
           NODE
+      - name: Evaluate guarded Zod 4 source-level compatibility patch in temp only
+        shell: bash
+        env:
+          RUFLO_COMPAT_INSTALL: ${{ runner.temp }}/ruflo-compat
+        run: |
+          set -euo pipefail
+          node --check benchmarks/offline/compat/zod4-trial.mjs
+          node benchmarks/offline/compat/zod4-trial.mjs
       - name: Verify public source untouched
         if: always()
         run: |
