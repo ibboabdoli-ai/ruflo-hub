@@ -20,7 +20,7 @@ reviewed `reference.mjs` must pass all seven.
 
 Both arms copy the **same existing solution** into a **temporary** candidate:
 1. `direct` runs a single local reference-copy-and-test stage.
-2. `ruflo` launches **real** pinned RuFlo v3.56.10 in an isolated local
+2. `ruflo` launches **real** pinned RuFlo v3.63.3 in an isolated local
    workspace, initializes its MCP server, registers three roles (Researcher,
    Coder, Tester), creates/assigns/completes three native tasks, rereads each
    persisted completion, and runs that **identical reference** test stage.
@@ -44,7 +44,7 @@ Source tree remains unchanged; only a disposable scratch folder is modified
 and then deleted. The GitHub Actions job has only `contents:read`, is
 restricted to a fixed lab branch. All npm dependencies used by this
 benchmark are pinned by `benchmarks/offline/deps/package-lock.json`, whose full
-SHA-256 is checked before the read-only runner executes `npm ci --ignore-scripts`.
+SHA-256 is checked before the read-only runner executes `npm ci --omit=optional --ignore-scripts`.
 The root `@metaharness/router@0.4.0` pin resolves a peer-dependency
 constraint of the RuFlo CLI; optional `ruvector` installs its own
 `@metaharness/router@0.3.2` separately. The lockfile provides repeatability,
@@ -76,13 +76,39 @@ free test for that evidence.
 - Both runs: 5 defective checks, 7/7 after the same pre-reviewed static patch; 3/3 persisted RuFlo tasks completed; 0 provider calls and 0 source repository edits.
 - These timings exclude installation, measure unequal paths and cannot establish AI coding productivity or a Codex-vs-RuFlo speed ratio.
 
+## Partial security remediation (2026-10-27)
+
+The initial pinned 3.56.10 benchmark installed optional ML dependencies and
+`npm audit --omit=dev` reported **1 critical, 16 high and 22 moderate**
+advisories across 39 dependency entries. The critical `protobufjs@6.11.6`
+path was `@xenova/transformers -> onnxruntime-web -> onnx-proto -> protobufjs`.
+The lockfile marks this optional chain as `optional: true`. Our synthetic
+MCP task bookkeeping does not require that ML dependency tree.
+
+In an [independent isolated candidate
+trial](https://github.com/ibboabdoli-ai/ruflo-hub/actions/runs/40479430952),
+pinned `ruflo@3.63.3` plus `@metaharness/router@0.4.0` installed via
+`npm ci --omit=optional --ignore-scripts`. All 80 repository tests and all
+3 actual MCP bookkeeping task completions passed with no model/API usage.
+`npm audit --omit=dev --omit=optional` reported **0 critical, 7 high,
+0 moderate**. The remaining seven high advisories include `zod` and
+upstream RuFlo / `@claude-flow/*` packages. The optional dependencies
+remain **listed** in the npm lockfile but are **not installed** on the
+runner. This is a reduced exposure profile, not a clean security audit.
+
+The branch benchmark now installs from this reviewed 3.63.3 lockfile, excluding
+optional packages; it still **fails closed** on any high/critical advisory.
+Do not claim the security gate is green or merge until remaining advisories
+have been investigated, resolved or received an independently approved
+exception. No blanket npm override/downgrade has been applied.
+
 ## Before merge: dependency and security release gate
 
 Earlier runs installed only `ruflo@3.56.10` with floating transitive versions and reported deprecated-package warnings (including koa-router, prebuild-install, node-domexception and OpenTelemetry packages). These warnings alone do not prove exploitable vulnerabilities.
 
 The dedicated lockfile and exact dependency versions are now committed in
 `benchmarks/offline/deps/`. The isolated workflow checks the exact lockfile
-SHA-256 and uses `npm ci --ignore-scripts` (not fresh registry resolution).
+SHA-256 and uses `npm ci --omit=optional --ignore-scripts` (not fresh registry resolution).
 The independent dependency/security audit, exact-head PR checks and reviewer
 sign-off are **still required** before release. Keep this lab independent of
 Proffera, Supervisor and production credentials. Passing CI is not a
