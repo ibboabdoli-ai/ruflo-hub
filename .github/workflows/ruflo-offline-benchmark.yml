@@ -42,15 +42,15 @@ jobs:
           npm test
       - name: Run static direct baseline with no model
         run: node benchmarks/offline/bench.mjs direct
-      - name: Install verified and committed dependency lock using npm ci
+      - name: Install verified RuFlo lock without unused optional ML dependencies
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/ruflo-benchmark-cli"
           cp benchmarks/offline/deps/package.json benchmarks/offline/deps/package-lock.json "$RUNNER_TEMP/ruflo-benchmark-cli/"
           cd "$RUNNER_TEMP/ruflo-benchmark-cli"
-          echo "e5b933a3a500f55da3c81f9d0d3280f334de70998187e29d2e4bdac2de34e1b7  package-lock.json" | sha256sum --check
-          npm ci --ignore-scripts --no-audit --no-fund
+          echo "ad1dd23c65428f581f337c4f23e3e8c92de6c416377f8cf5639fd2be20bbef1f  package-lock.json" | sha256sum --check
+          npm ci --omit=optional --ignore-scripts --no-audit --no-fund
           test -x node_modules/.bin/ruflo
           echo "RUFLO_BIN=$RUNNER_TEMP/ruflo-benchmark-cli/node_modules/.bin/ruflo" >> "$GITHUB_ENV"
       - name: Exercise real three-role RuFlo task bookkeeping without inference
@@ -69,7 +69,7 @@ jobs:
           cd "$RUNNER_TEMP/ruflo-benchmark-cli"
           # npm audit has exit code 1 when it reports vulnerabilities.
           # Parse JSON independently and fail closed on errors or high/critical findings.
-          npm audit --omit=dev --json > "$RUNNER_TEMP/ruflo-dependency-audit.json" || true
+          npm audit --omit=dev --omit=optional --json > "$RUNNER_TEMP/ruflo-dependency-audit.json" || true
           node --input-type=module <<'NODE'
           import {readFileSync} from 'node:fs';
           const raw = readFileSync(process.env.RUNNER_TEMP+'/ruflo-dependency-audit.json','utf8');
