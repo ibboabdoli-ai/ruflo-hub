@@ -90,4 +90,4 @@ for(const file of securityFiles){
   }catch(error){record('security validator module import',false,error?.name+': '+error?.message)}
 }
 console.log('ZOD_COMPAT_SUMMARY '+JSON.stringify({checks:evidence.length,failed:hazards.length,failedAreas:hazards.map(x=>x.area)}));
-if(hazards.length)throw Error('Blocked: RuFlo's upstream Zod v3 validation contracts are not verified with forced Zod 4');
+if(hazards.length)throw Error("Blocked: upstream RuFlo Zod v3 validation contracts are not verified with forced Zod 4");
