@@ -50,7 +50,10 @@ jobs:
           cd "$RUNNER_TEMP/ruflo-lock-review"
           # 'npm install --package-lock-only' generated a lock npm ci rejected;
           # generate the tree using an actual installation instead.
-          npm install --save-exact --ignore-scripts --no-audit --no-fund "ruflo@3.56.10"
+          # RuFlo's CLI peers require @metaharness/router ^0.4.0, while
+          # optional ruvector needs 0.3.2. Pin the peer at the root so npm
+          # can place 0.3.2 in ruvector's nested dependency tree.
+          npm install --save-exact --ignore-scripts --no-audit --no-fund "ruflo@3.56.10" "@metaharness/router@0.4.0"
           test -s package-lock.json
           test -x node_modules/.bin/ruflo
           sha256sum package-lock.json
