@@ -3,6 +3,6 @@
   "private": true,
   "dependencies": {
     "@metaharness/router": "0.4.0",
-    "ruflo": "3.56.10"
+    "ruflo": "3.63.3"
   }
 }
