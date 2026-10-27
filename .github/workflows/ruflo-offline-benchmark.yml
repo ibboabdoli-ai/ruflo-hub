@@ -42,40 +42,17 @@ jobs:
           npm test
       - name: Run static direct baseline with no model
         run: node benchmarks/offline/bench.mjs direct
-      - name: Create a fresh npm lock with actual install, then verify npm ci
+      - name: Install verified and committed dependency lock using npm ci
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/ruflo-lock-review"
-          cd "$RUNNER_TEMP/ruflo-lock-review"
-          # 'npm install --package-lock-only' generated a lock npm ci rejected;
-          # generate the tree using an actual installation instead.
-          # RuFlo's CLI peers require @metaharness/router ^0.4.0, while
-          # optional ruvector needs 0.3.2. Pin the peer at the root so npm
-          # can place 0.3.2 in ruvector's nested dependency tree.
-          npm install --save-exact --ignore-scripts --no-audit --no-fund "ruflo@3.56.10" "@metaharness/router@0.4.0"
-          test -s package-lock.json
-          test -x node_modules/.bin/ruflo
-          sha256sum package-lock.json
-          # Fail if npm cannot reproduce the newly generated complete lock.
+          mkdir -p "$RUNNER_TEMP/ruflo-benchmark-cli"
+          cp benchmarks/offline/deps/package.json benchmarks/offline/deps/package-lock.json "$RUNNER_TEMP/ruflo-benchmark-cli/"
+          cd "$RUNNER_TEMP/ruflo-benchmark-cli"
+          echo "e5b933a3a500f55da3c81f9d0d3280f334de70998187e29d2e4bdac2de34e1b7  package-lock.json" | sha256sum --check
           npm ci --ignore-scripts --no-audit --no-fund
           test -x node_modules/.bin/ruflo
-          echo "RUFLO_BIN=$RUNNER_TEMP/ruflo-lock-review/node_modules/.bin/ruflo" >> "$GITHUB_ENV"
-      - name: Upload complete npm-ci-tested lock for independent review
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: ruflo-lock-review
-          path: ${{ runner.temp }}/ruflo-lock-review/package-lock.json
-          retention-days: 7
-      - name: Export synthetic public dependency lock for repository archiving
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd "$RUNNER_TEMP/ruflo-lock-review"
-          echo "e5b933a3a500f55da3c81f9d0d3280f334de70998187e29d2e4bdac2de34e1b7  package-lock.json" | sha256sum --check
-          echo RUFLO_LOCK_CONTENT_START_V1
-          cat package-lock.json
-          echo RUFLO_LOCK_CONTENT_END_V1
+          echo "RUFLO_BIN=$RUNNER_TEMP/ruflo-benchmark-cli/node_modules/.bin/ruflo" >> "$GITHUB_ENV"
       - name: Exercise real three-role RuFlo task bookkeeping without inference
         run: node benchmarks/offline/bench.mjs ruflo
       - name: Verify Hub source tree was never mutated
