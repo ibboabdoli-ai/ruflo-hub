@@ -71,3 +71,18 @@ test('benchmark documents that it does not measure actual Codex/model reasoning'
   assert.match(workflow,/ANTHROPIC_API_KEY: ''/);
   assert.doesNotMatch(workflow,/secrets\.|contents: write|pull_request_target|deploy-pages|gh pr merge/);
 });
+
+test('major Zod override remains blocked by independent negative-path compatibility gate',()=>{
+  const workflow=readFileSync(new URL('../.github/workflows/ruflo-offline-benchmark.yml',import.meta.url),'utf8');
+  const compatibility=readFileSync(new URL('../benchmarks/offline/zod-compat.mjs',import.meta.url),'utf8');
+  const docs=readFileSync(new URL('../benchmarks/offline/README.md',import.meta.url),'utf8');
+  assert.match(workflow,/Check upstream Zod v4 runtime validation compatibility - fail closed/);
+  assert.match(workflow,/node --check benchmarks\/offline\/zod-compat\.mjs/);
+  assert.match(workflow,/node benchmarks\/offline\/zod-compat\.mjs/);
+  assert.match(compatibility,/validateAgentConfig\(\{\}\)/);
+  assert.match(compatibility,/installed @claude-flow\/security input validator/);
+  assert.match(compatibility,/legacy ZodError\.errors API expected by upstream/);
+  assert.match(compatibility,/if\(hazards\.length\)throw Error/);
+  assert.match(docs,/Confirmed Zod 4 incompatibility/);
+  assert.match(docs,/keep PR #10 in Draft and do not merge/);
+});
