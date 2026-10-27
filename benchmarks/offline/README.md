@@ -42,9 +42,13 @@ database, no model API key or paid inference. The benchmark child process gets
 a restricted environment with provider credentials explicitly empty.
 Source tree remains unchanged; only a disposable scratch folder is modified
 and then deleted. The GitHub Actions job has only `contents:read`, is
-restricted to a fixed lab branch and pins the upstream RuFlo package version.
-Transitive npm dependencies are **not** lockfile-pinned, so this does not
-constitute supply-chain reproducibility or security approval of external code.
+restricted to a fixed lab branch. All npm dependencies used by this
+benchmark are pinned by `benchmarks/offline/deps/package-lock.json`, whose full
+SHA-256 is checked before the read-only runner executes `npm ci --ignore-scripts`.
+The root `@metaharness/router@0.4.0` pin resolves a peer-dependency
+constraint of the RuFlo CLI; optional `ruvector` installs its own
+`@metaharness/router@0.3.2` separately. The lockfile provides repeatability,
+**not** a third-party security audit or proof the dependencies are risk-free.
 
 ## Acceptance evidence
 
@@ -74,6 +78,12 @@ free test for that evidence.
 
 ## Before merge: dependency and security release gate
 
-The CI currently installs `ruflo@3.56.10` with `npm install --no-save --ignore-scripts` in a temporary directory. **Only the top-level package version is fixed; transitive dependency resolution is not locked.** Both hosted runs installed 617 packages and reported deprecated-package warnings (including koa-router, prebuild-install, node-domexception and OpenTelemetry packages). These warnings are not by themselves evidence of exploitable vulnerabilities.
+Earlier runs installed only `ruflo@3.56.10` with floating transitive versions and reported deprecated-package warnings (including koa-router, prebuild-install, node-domexception and OpenTelemetry packages). These warnings alone do not prove exploitable vulnerabilities.
 
-Do not treat this experiment as supply-chain approved until a separately reviewed change adds a committed npm lockfile for the isolated RuFlo dependency tree, installs it using `npm ci --ignore-scripts`, and records an audited dependency/security review. Keep all lockfiles and installed code confined to this lab; do not connect Proffera, Supervisor or production credentials. The passing workflow alone is not a release approval.
+The dedicated lockfile and exact dependency versions are now committed in
+`benchmarks/offline/deps/`. The isolated workflow checks the exact lockfile
+SHA-256 and uses `npm ci --ignore-scripts` (not fresh registry resolution).
+The independent dependency/security audit, exact-head PR checks and reviewer
+sign-off are **still required** before release. Keep this lab independent of
+Proffera, Supervisor and production credentials. Passing CI is not a
+supply-chain security approval.
