@@ -58,8 +58,28 @@ for(const [name,schema,input,expected] of [
   assert.equal(schema.safeParse(input).success,expected,name);
   console.log('COMPAT_TEST '+JSON.stringify({name,passed:true}));
 }
+for(const [name,schema,input,expected] of [
+  ['command rejects metacharacters',sec.CommandArgumentSchema,'arg;rm',false],
+  ['command accepts harmless arg',sec.CommandArgumentSchema,'--quiet',true],
+  ['path rejects traversal',sec.PathSchema,'../../etc/passwd',false],
+  ['path accepts simple relative',sec.PathSchema,'data/example.txt',true],
+  ['safe string rejects shell expansion',sec.SafeStringSchema,'hello$(evil)',false],
+  ['safe string accepts ordinary text',sec.SafeStringSchema,'normal_text',true],
+  ['security config applies defaults',sec.SecurityConfigSchema,{},true]
+]){
+  assert.equal(schema.safeParse(input).success,expected,name);
+  console.log('COMPAT_TEST '+JSON.stringify({name,passed:true}));
+}
+for(const functionName of ['validateTaskConfig','validateSwarmConfig','validateMCPServerConfig']){
+  const fn=sharedModule[functionName];
+  assert.equal(typeof fn,'function',functionName);
+  const result=fn({});
+  assert.equal(typeof result.success,'boolean',functionName);
+  if(!result.success)assert.ok(Array.isArray(result.errors)&&result.errors.length>0);
+  console.log('COMPAT_TEST '+JSON.stringify({name:'shared '+functionName+' invalid/default config',passed:true}));
+}
 const emailError=EmailSchema.safeParse('bad');
 assert.equal(emailError.success,false);
 assert.ok(emailError.error.issues.length>0);
 assert.equal(typeof emailError.error.issues[0].message,'string');
-console.log('COMPAT_SUMMARY '+JSON.stringify({smokeTests:10,passed:true,warning:'lab-only: never deploy modified npm artifacts'}));
+console.log('COMPAT_SUMMARY '+JSON.stringify({smokeTests:20,passed:true,warning:'lab-only: never deploy modified npm artifacts'}));
