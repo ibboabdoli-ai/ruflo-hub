@@ -1,0 +1,8 @@
+{
+  "name": "ruflo-lock-review",
+  "private": true,
+  "dependencies": {
+    "@metaharness/router": "0.4.0",
+    "ruflo": "3.56.10"
+  }
+}
