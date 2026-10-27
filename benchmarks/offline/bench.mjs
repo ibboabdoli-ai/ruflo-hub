@@ -107,8 +107,7 @@ if(arm==='direct'){
     const swarm=idOf(await invoke('swarm_init',{topology:'hierarchical',maxAgents:3,strategy:'specialized'}),'swarm');
     const roles=['researcher','coder','tester'],agents=[],tasks=[];
     for(const role of roles){
-      const data=await invoke('agent_spawn',{agentType:role,swarmId:swarm,
-        task:'Synthetic offline fixture only, no model inference, no repository writes'});
+      const data=await invoke('agent_spawn',{agentType:role,swarmId:swarm});
       agents.push(idOf(data,'agent'));
     }
     for(let i=0;i<roles.length;i++){
@@ -129,9 +128,9 @@ if(arm==='direct'){
     for(let i=0;i<3;i++){
       if(i===1)m=await benchmarkFixture();
       const answer=fixedOutputs[i];
-      await invoke('task_complete',{taskId:tasks[i],result:answer});
+      await invoke('task_complete',{taskId:tasks[i],result:{output:answer}});
       const state=await invoke('task_status',{taskId:tasks[i]});
-      if(state.status!=='completed'||state.result!==answer)
+      if(state.status!=='completed'||state.result?.output!==answer)
         throw Error('RuFlo did not persist task completion for '+roles[i]);
       results.push(roleSummary(roles[i],state));
     }
