@@ -96,11 +96,22 @@ upstream RuFlo / `@claude-flow/*` packages. The optional dependencies
 remain **listed** in the npm lockfile but are **not installed** on the
 runner. This is a reduced exposure profile, not a clean security audit.
 
-The branch benchmark now installs from this reviewed 3.63.3 lockfile, excluding
-optional packages; it still **fails closed** on any high/critical advisory.
-Do not claim the security gate is green or merge until remaining advisories
-have been investigated, resolved or received an independently approved
-exception. No blanket npm override/downgrade has been applied.
+A [second independent trial](https://github.com/ibboabdoli-ai/ruflo-hub/actions/runs/40480508734)
+added an **explicit, temporary major-version override `zod: 4.6.7`**.
+That experiment passed `npm ci --omit=optional`, all 80 repository tests,
+all 3 RuFlo MCP task persistence checks, and `npm audit --omit=dev --omit=optional`
+with **zero reported advisories** (0 critical, 0 high, 0 moderate, 0 low).
+The same pinned tree is now used by this **isolated lab benchmark only**.
+
+**Compatibility warning:** `@claude-flow/cli@3.63.3`,
+`@claude-flow/security@3.0.5` and `@claude-flow/shared@3.0.5`
+explicitly declare Zod v3 ranges, not v4. The override deliberately violates
+their declared constraints. Passing this narrow three-task benchmark is
+**not evidence that other RuFlo functions are compatible or safe** with Zod v4.
+Do not reuse this overridden tree in a production service or connect Proffera
+or Supervisor. The npm audit gate continues to fail closed on any advisory;
+independent source-level compatibility review and upstream-supported Zod
+migration are still required **before merging PR #10**.
 
 ## Before merge: dependency and security release gate
 
