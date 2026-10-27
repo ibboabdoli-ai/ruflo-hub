@@ -45,6 +45,12 @@ test('benchmark documents that it does not measure actual Codex/model reasoning'
   const lock=JSON.parse(readFileSync(new URL('../benchmarks/offline/deps/package-lock.json',import.meta.url),'utf8'));
   assert.equal(manifest.dependencies.ruflo,'3.63.3');
   assert.equal(manifest.dependencies['@metaharness/router'],'0.4.0');
+  // Explicit, lab-only major-version override; not an upstream compatibility guarantee.
+  assert.equal(manifest.overrides.zod,'4.6.7');
+  assert.equal(lock.packages['node_modules/zod'].version,'4.6.7');
+  assert.match(lock.packages['node_modules/zod'].integrity,/^sha512-/);
+  assert.ok(Object.entries(lock.packages).every(([p,v])=>
+    !p.endsWith('/zod')||v.optional||v.version==='4.6.7'));
   assert.equal(lock.packages['node_modules/ruflo'].version,'3.63.3');
   assert.match(lock.packages['node_modules/ruflo'].integrity,/^sha512-/);
   assert.equal(lock.packages['node_modules/@metaharness/router'].version,'0.4.0');
