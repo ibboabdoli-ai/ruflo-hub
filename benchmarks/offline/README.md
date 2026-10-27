@@ -113,6 +113,37 @@ or Supervisor. The npm audit gate continues to fail closed on any advisory;
 independent source-level compatibility review and upstream-supported Zod
 migration are still required **before merging PR #10**.
 
+## Confirmed Zod 4 incompatibility — release blocker (2026-10-27)
+
+A source-level review of **tagged upstream RuFlo v3.63.3** identified
+Zod 3-only APIs in core validation paths. The independent read-only
+[hosted compatibility run](https://github.com/ibboabdoli-ai/ruflo-hub/actions/runs/40484466713)
+then reproduced the following failures using the exact pinned lab dependencies:
+
+- [`@claude-flow/shared/src/core/config/validator.ts`](https://github.com/ruvnet/ruflo/blob/v3.63.3/v3/%40claude-flow/shared/src/core/config/validator.ts):
+  converts validation errors with `error.errors.map(...)`. In installed
+  Zod 4.6.7, error details live at `error.issues` and `error.errors`
+  is undefined. Calling the shipped `validateAgentConfig({})` throws
+  `TypeError: Cannot read properties of undefined (reading 'map')`.
+- [`@claude-flow/security/src/input-validator.ts`](https://github.com/ruvnet/ruflo/blob/v3.63.3/v3/%40claude-flow/security/src/input-validator.ts):
+  uses Zod 3 API shapes in security validators and its custom error map.
+  Importing the **installed** compiled `@claude-flow/security/dist/input-validator.js`
+  throws `TypeError: z.string(...).ip is not a function` with Zod 4.6.7.
+
+The test checks the compiled package's real validation paths, not only
+Zod's type declarations. The release gate intentionally **fails closed**.
+The existing 80 repository tests and three MCP task completions do not
+exercise these negative-input/security module paths, and the zero-advisory
+`npm audit --omit=dev --omit=optional` result does not imply Zod 4
+API compatibility. This is a confirmed functional incompatibility,
+not a hypothetical limitation.
+
+**Decision: keep PR #10 in Draft and do not merge this Zod 4 override.**
+A safe release requires a supported upstream migration (or an independently
+reviewed compatibility fix with full negative-input, security and integration
+tests), plus repeatable lockfile and audit verification. Do not use this
+experimental dependency override in Proffera, Supervisor or production.
+
 ## Before merge: dependency and security release gate
 
 Earlier runs installed only `ruflo@3.56.10` with floating transitive versions and reported deprecated-package warnings (including koa-router, prebuild-install, node-domexception and OpenTelemetry packages). These warnings alone do not prove exploitable vulnerabilities.
