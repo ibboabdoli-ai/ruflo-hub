@@ -51,6 +51,15 @@ jobs:
           node -p '"CANDIDATE_VERSION "+require("./node_modules/ruflo/package.json").version'
           sha256sum package-lock.json
           echo "RUFLO_BIN=$RUNNER_TEMP/ruflo-candidate/node_modules/.bin/ruflo" >> "$GITHUB_ENV"
+      - name: Export dependency lock from successful optional-free clean install
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/ruflo-candidate"
+          echo "ad1dd23c65428f581f337c4f23e3e8c92de6c416377f8cf5639fd2be20bbef1f  package-lock.json" | sha256sum --check
+          echo CANDIDATE_LOCK_BEGIN_20261027
+          cat package-lock.json
+          echo CANDIDATE_LOCK_END_20261027
       - name: Audit installed non-optional candidate dependencies without changing packages
         shell: bash
         run: |
