@@ -33,6 +33,10 @@ test('benchmark documents that it does not measure actual Codex/model reasoning'
   assert.match(script,/nativeTasksCompleted:3/);
   assert.match(script,/task_complete/);
   assert.match(script,/task_status/);
+  assert.match(script,/invoke\('agent_spawn',\{agentType:role,swarmId:swarm\}\)/);
+  assert.doesNotMatch(script,/agent_spawn',\{[^}]*task:/);
+  assert.match(script,/task_complete',\{taskId:tasks\[i\],result:\{output:answer\}\}/);
+  assert.match(script,/state\.result\?\.output!==answer/);
   assert.match(script,/pre-reviewed-static-reference|identical static reference/);
   assert.match(workflow,/permissions:\s*\n  contents: read/);
   assert.match(workflow,/persist-credentials: false/);
