@@ -62,6 +62,14 @@ jobs:
           git diff --exit-code
           test -z "$(git status --porcelain)"
 
+      - name: Check upstream Zod v4 runtime validation compatibility - fail closed
+        shell: bash
+        env:
+          RUFLO_COMPAT_INSTALL: ${{ runner.temp }}/ruflo-benchmark-cli
+        run: |
+          set -euo pipefail
+          node --check benchmarks/offline/zod-compat.mjs
+          node benchmarks/offline/zod-compat.mjs
       - name: Audit locked RuFlo runtime dependencies for known vulnerabilities
         shell: bash
         run: |
