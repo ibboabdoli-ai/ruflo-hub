@@ -1,0 +1,242 @@
+diff --git a/v3/@claude-flow/shared/src/core/config/validator.ts b/v3/@claude-flow/shared/src/core/config/validator.ts
+--- a/v3/@claude-flow/shared/src/core/config/validator.ts
++++ b/v3/@claude-flow/shared/src/core/config/validator.ts
+@@ -43,7 +43,7 @@
+  * Convert Zod error to validation errors
+  */
+ function zodErrorToValidationErrors(error: ZodError): ValidationError[] {
++  return error.issues.map((e) => ({
+-  return error.errors.map((e) => ({
+     path: e.path.join('.'),
+     message: e.message,
+     code: e.code,
+@@ -54,8 +54,8 @@
+  * Generic validation function
+  * Uses parse + try/catch to get output types with defaults applied
+  */
++function validate<TOutput>(
++  schema: { parse(data: unknown): TOutput },
+-function validate<TInput, TOutput>(
+-  schema: z.ZodType<TOutput, z.ZodTypeDef, TInput>,
+   data: unknown
+ ): ValidationResult<TOutput> {
+   try {
+@@ -131,8 +131,8 @@
+   /**
+    * Validate and throw on error
+    */
++  static validateOrThrow<TOutput>(
++    schema: { parse(data: unknown): TOutput },
+-  static validateOrThrow<TInput, TOutput>(
+-    schema: z.ZodType<TOutput, z.ZodTypeDef, TInput>,
+     data: unknown,
+     configName: string
+   ): TOutput {
+@@ -200,8 +200,8 @@
+   /**
+    * Check if data matches schema
+    */
++  static isValid<TOutput>(
++    schema: { parse(data: unknown): TOutput },
+-  static isValid<TInput, TOutput>(
+-    schema: z.ZodType<TOutput, z.ZodTypeDef, TInput>,
+     data: unknown
+   ): boolean {
+     return validate(schema, data).success;
+diff --git a/v3/@claude-flow/security/src/input-validator.ts b/v3/@claude-flow/security/src/input-validator.ts
+--- a/v3/@claude-flow/security/src/input-validator.ts
++++ b/v3/@claude-flow/security/src/input-validator.ts
+@@ -13,29 +13,36 @@
+  */
+ 
+ import { z } from 'zod';
++import { isIP } from 'node:net';
+ 
+ /**
+  * Custom error map for security-focused messages
+  */
++// A structurally typed callback works with both Zod 3's (issue, context)
++ // and Zod 4's (issue) error-map signatures.
++const securityErrorMap = (
++  issue: { code: string; format?: unknown; validation?: unknown },
++  ctx?: { defaultError: string }
++): { message: string } => {
+-const securityErrorMap: z.ZodErrorMap = (issue, ctx) => {
+   switch (issue.code) {
+     case z.ZodIssueCode.too_big:
+       return { message: `Input exceeds maximum allowed size` };
+     case z.ZodIssueCode.too_small:
+       return { message: `Input below minimum required size` };
++    case 'invalid_string':
++    case 'invalid_format':
++      if ((issue.format ?? issue.validation) === 'email') {
+-    case z.ZodIssueCode.invalid_string:
+-      if (issue.validation === 'email') {
+         return { message: 'Invalid email format' };
+       }
++      if ((issue.format ?? issue.validation) === 'url') {
+-      if (issue.validation === 'url') {
+         return { message: 'Invalid URL format' };
+       }
++      if ((issue.format ?? issue.validation) === 'uuid') {
+-      if (issue.validation === 'uuid') {
+         return { message: 'Invalid UUID format' };
+       }
+       return { message: 'Invalid string format' };
+     default:
++      return { message: ctx?.defaultError ?? 'Invalid input' };
+-      return { message: ctx.defaultError };
+   }
+ };
+ 
+@@ -161,13 +168,13 @@
+  * IP address schema (v4)
+  */
+ export const IPv4Schema = z.string()
++  .refine((value) => isIP(value) === 4, 'Invalid IPv4 address');
+-  .ip({ version: 'v4', message: 'Invalid IPv4 address' });
+ 
+ /**
+  * IP address schema (v4 or v6)
+  */
+ export const IPSchema = z.string()
++  .refine((value) => isIP(value) !== 0, 'Invalid IP address');
+-  .ip({ message: 'Invalid IP address' });
+ 
+ // ============================================================================
+ // Authentication Schemas
+@@ -264,7 +271,7 @@
+ export const SpawnAgentSchema = z.object({
+   type: AgentTypeSchema,
+   id: IdentifierSchema.optional(),
++  config: z.record(z.string(), z.unknown()).optional(),
+-  config: z.record(z.unknown()).optional(),
+   timeout: z.number().positive().optional(),
+ });
+ 
+@@ -276,7 +283,7 @@
+   content: SafeStringSchema.max(10000, 'Task content too long'),
+   agentType: AgentTypeSchema,
+   priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
++  metadata: z.record(z.string(), z.unknown()).optional(),
+-  metadata: z.record(z.unknown()).optional(),
+ });
+ 
+ // ============================================================================
+@@ -387,14 +394,17 @@
+   /**
+    * Validates input against a schema
+    */
++  static validate<T>(schema: { parse(input: unknown): T }, input: unknown): T {
+-  static validate<T>(schema: z.ZodSchema<T>, input: unknown): T {
+     return schema.parse(input);
+   }
+ 
+   /**
+    * Safely validates input, returning result
+    */
++  static safeParse<T>(
++    schema: { safeParse(input: unknown): { success: true; data: T } | { success: false; error: z.ZodError } },
++    input: unknown
++  ): { success: true; data: T } | { success: false; error: z.ZodError } {
+-  static safeParse<T>(schema: z.ZodSchema<T>, input: unknown): z.SafeParseReturnType<unknown, T> {
+     return schema.safeParse(input);
+   }
+ 
+diff --git a/v3/@claude-flow/security/__tests__/input-validator.test.ts b/v3/@claude-flow/security/__tests__/input-validator.test.ts
+--- a/v3/@claude-flow/security/__tests__/input-validator.test.ts
++++ b/v3/@claude-flow/security/__tests__/input-validator.test.ts
+@@ -21,6 +21,8 @@
+   UUIDSchema,
+   HttpsUrlSchema,
+   PortSchema,
++  IPv4Schema,
++  IPSchema,
+   UserRoleSchema,
+   PermissionSchema,
+   LoginRequestSchema,
+@@ -380,3 +382,23 @@
+     });
+   });
+ });
++
++describe('Zod cross-version security regression tests', () => {
++  it('accepts IPv4 and IPv6 only where appropriate', () => {
++    expect(IPv4Schema.safeParse('127.0.0.1').success).toBe(true);
++    expect(IPv4Schema.safeParse('::1').success).toBe(false);
++    expect(IPSchema.safeParse('127.0.0.1').success).toBe(true);
++    expect(IPSchema.safeParse('::1').success).toBe(true);
++    expect(IPSchema.safeParse('999.999.999.999').success).toBe(false);
++  });
++
++  it('preserves fail-closed validation and useful errors', () => {
++    const invalidEmail = EmailSchema.safeParse('not-an-email');
++    expect(invalidEmail.success).toBe(false);
++    if (!invalidEmail.success) {
++      expect(invalidEmail.error.issues[0]?.message).toBeTruthy();
++    }
++    expect(CommandArgumentSchema.safeParse('arg;rm -rf /').success).toBe(false);
++    expect(PathSchema.safeParse('../../etc/passwd').success).toBe(false);
++  });
++});
+diff --git a/v3/@claude-flow/shared/__tests__/zod-cross-version.test.ts b/v3/@claude-flow/shared/__tests__/zod-cross-version.test.ts
+new file mode 100644
+--- /dev/null
++++ b/v3/@claude-flow/shared/__tests__/zod-cross-version.test.ts
+@@ -0,0 +1,17 @@
++import { describe, it, expect } from 'vitest';
++import { validateAgentConfig, ConfigValidator } from '../src/core/config/validator.js';
++
++describe('Cross-version Zod validation regression', () => {
++  it('returns structured errors for invalid agent config', () => {
++    const result = validateAgentConfig({});
++    expect(result.success).toBe(false);
++    expect(result.errors?.length).toBeGreaterThan(0);
++    expect(result.errors?.every((error) =>
++      typeof error.path === 'string' && typeof error.message === 'string'
++    )).toBe(true);
++  });
++
++  it('throws a descriptive validation error instead of TypeError', () => {
++    expect(() => ConfigValidator.validateAgentOrThrow({})).toThrow(/Invalid agent configuration/);
++  });
++});
+diff --git a/v3/@claude-flow/shared/src/core/config/schema.ts b/v3/@claude-flow/shared/src/core/config/schema.ts
+--- a/v3/@claude-flow/shared/src/core/config/schema.ts
++++ b/v3/@claude-flow/shared/src/core/config/schema.ts
+@@ -25,7 +25,7 @@
+     maxMemoryMb: z.number().int().positive().optional(),
+     maxCpuPercent: z.number().min(0).max(100).optional(),
+   }).optional(),
++  metadata: z.record(z.string(), z.unknown()).optional(),
+-  metadata: z.record(z.unknown()).optional(),
+ });
+ 
+ /**
+@@ -37,7 +37,7 @@
+   priority: z.number().int().min(0).max(100).default(50),
+   timeout: z.number().int().positive().optional(),
+   assignedAgent: z.string().optional(),
++  input: z.record(z.string(), z.unknown()).optional(),
+-  input: z.record(z.unknown()).optional(),
+   metadata: z.object({
+     requiredCapabilities: z.array(z.string()).optional(),
+     retryCount: z.number().int().min(0).optional(),
+@@ -75,7 +75,7 @@
+     batchSize: z.number().int().positive().default(10),
+     flushIntervalMs: z.number().int().positive().default(100),
+   }).optional(),
++  metadata: z.record(z.string(), z.unknown()).optional(),
+-  metadata: z.record(z.unknown()).optional(),
+ });
+ 
+ /**
+@@ -127,7 +127,7 @@
+     resources: z.boolean().default(true),
+     prompts: z.boolean().default(true),
+     logging: z.boolean().default(true),
++    experimental: z.record(z.string(), z.boolean()).optional(),
+-    experimental: z.record(z.boolean()).optional(),
+   }).optional(),
+ });
+ 

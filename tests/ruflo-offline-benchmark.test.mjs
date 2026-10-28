@@ -1,0 +1,88 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {evaluate,CASE_NAMES} from '../benchmarks/offline/cases.mjs';
+import * as defective from '../benchmarks/offline/defective.mjs';
+import * as reference from '../benchmarks/offline/reference.mjs';
+import {benchmarkFixture} from '../benchmarks/offline/repair.mjs';
+
+test('two independently specified synthetic defects are reproducible',()=>{
+  const baseline=evaluate(defective);
+  assert.equal(baseline.length,7);
+  assert.ok(baseline.filter(x=>!x.passed).length>=3);
+  assert.deepEqual(CASE_NAMES.map(x=>x),baseline.map(x=>x.case));
+});
+test('exact same pre-reviewed oracle patch repairs all seven cases',()=>{
+  const results=evaluate(reference);
+  assert.equal(results.filter(x=>x.passed).length,7);
+});
+test('scratch copy and test runs without writing to source repository',async()=>{
+  const s=await benchmarkFixture();
+  assert.equal(s.fixtureCases,7);
+  assert.ok(s.baselineFailures>=3);
+  assert.equal(s.passesAfter,7);
+  assert.equal(s.patchOrigin,'pre-reviewed-static-reference');
+  assert.equal(s.providerCalls,0);
+  assert.equal(s.sourceRepoEdits,0);
+  assert.ok(s.repairAndTestMs>=0);
+});
+test('benchmark documents that it does not measure actual Codex/model reasoning',()=>{
+  const script=readFileSync(new URL('../benchmarks/offline/bench.mjs',import.meta.url),'utf8');
+  const workflow=readFileSync(new URL('../.github/workflows/ruflo-offline-benchmark.yml',import.meta.url),'utf8');
+  assert.match(script,/NOT a Codex\/model benchmark/);
+  assert.match(script,/nativeTasksCompleted:3/);
+  assert.match(script,/task_complete/);
+  assert.match(script,/task_status/);
+  assert.match(script,/invoke\('agent_spawn',\{agentType:role,swarmId:swarm\}\)/);
+  assert.doesNotMatch(script,/agent_spawn',\{[^}]*task:/);
+  assert.match(script,/task_complete',\{taskId:tasks\[i\],result:\{output:answer\}\}/);
+  assert.match(script,/state\.result\?\.output!==answer/);
+  assert.match(script,/pre-reviewed-static-reference|identical static reference/);
+  assert.match(workflow,/permissions:\s*\n  contents: read/);
+  assert.match(workflow,/persist-credentials: false/);
+  const manifest=JSON.parse(readFileSync(new URL('../benchmarks/offline/deps/package.json',import.meta.url),'utf8'));
+  const lock=JSON.parse(readFileSync(new URL('../benchmarks/offline/deps/package-lock.json',import.meta.url),'utf8'));
+  assert.equal(manifest.dependencies.ruflo,'3.63.3');
+  assert.equal(manifest.dependencies['@metaharness/router'],'0.4.0');
+  // Explicit, lab-only major-version override; not an upstream compatibility guarantee.
+  assert.equal(manifest.overrides.zod,'4.6.7');
+  const docs=readFileSync(new URL('../benchmarks/offline/README.md',import.meta.url),'utf8');
+  assert.match(docs,/Compatibility warning/);
+  assert.match(docs,/explicitly declare Zod v3 ranges/);
+  assert.match(docs,/independent source-level compatibility review/);
+  assert.equal(lock.packages['node_modules/zod'].version,'4.6.7');
+  assert.match(lock.packages['node_modules/zod'].integrity,/^sha512-/);
+  assert.ok(Object.entries(lock.packages).every(([p,v])=>
+    !p.endsWith('/zod')||v.optional||v.version==='4.6.7'));
+  assert.equal(lock.packages['node_modules/ruflo'].version,'3.63.3');
+  assert.match(lock.packages['node_modules/ruflo'].integrity,/^sha512-/);
+  assert.equal(lock.packages['node_modules/@metaharness/router'].version,'0.4.0');
+  assert.equal(lock.packages['node_modules/ruvector/node_modules/@metaharness/router'].version,'0.3.2');
+  assert.match(workflow,/npm ci --omit=optional --ignore-scripts --no-audit --no-fund/);
+  assert.match(workflow,/npm audit --omit=dev --omit=optional --json/);
+  assert.equal(lock.packages['node_modules/onnx-proto/node_modules/protobufjs'].optional,true);
+  const lockBytes=readFileSync(new URL('../benchmarks/offline/deps/package-lock.json',import.meta.url));
+  const lockHash=createHash('sha256').update(lockBytes).digest('hex');
+  assert.match(workflow,new RegExp(lockHash));
+  assert.match(workflow,/sha256sum --check/);
+  assert.doesNotMatch(workflow,/npm install |--package-lock-only/);
+  assert.match(workflow,/OPENAI_API_KEY: ''/);
+  assert.match(workflow,/ANTHROPIC_API_KEY: ''/);
+  assert.doesNotMatch(workflow,/secrets\.|contents: write|pull_request_target|deploy-pages|gh pr merge/);
+});
+
+test('major Zod override remains blocked by independent negative-path compatibility gate',()=>{
+  const workflow=readFileSync(new URL('../.github/workflows/ruflo-offline-benchmark.yml',import.meta.url),'utf8');
+  const compatibility=readFileSync(new URL('../benchmarks/offline/zod-compat.mjs',import.meta.url),'utf8');
+  const docs=readFileSync(new URL('../benchmarks/offline/README.md',import.meta.url),'utf8');
+  assert.match(workflow,/Check upstream Zod v4 runtime validation compatibility - fail closed/);
+  assert.match(workflow,/node --check benchmarks\/offline\/zod-compat\.mjs/);
+  assert.match(workflow,/node benchmarks\/offline\/zod-compat\.mjs/);
+  assert.match(compatibility,/validateAgentConfig\(\{\}\)/);
+  assert.match(compatibility,/installed @claude-flow\/security input validator/);
+  assert.match(compatibility,/legacy ZodError\.errors API expected by upstream/);
+  assert.match(compatibility,/if\(hazards\.length\)throw Error/);
+  assert.match(docs,/Confirmed Zod 4 incompatibility/);
+  assert.match(docs,/keep PR #10 in Draft and do not merge/);
+});
