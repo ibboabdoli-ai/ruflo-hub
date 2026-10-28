@@ -1,0 +1,95 @@
+name: Upstream RuFlo Zod 3 and 4 source patch validation - isolated
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/ruflo-offline-benchmark-20261025
+    paths:
+      - upstream-patches/ruflo-zod-cross-version-v3.63.6.patch
+      - .github/workflows/ruflo-upstream-patch-validation.yml
+permissions:
+  contents: read
+jobs:
+  upstream-zod-validation:
+    if: github.repository == 'ibboabdoli-ai/ruflo-hub' && github.ref == 'refs/heads/work/ruflo-offline-benchmark-20261025'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        zod: ['3.25.76', '4.6.7']
+    env:
+      CI: 'true'
+      OPENAI_API_KEY: ''
+      ANTHROPIC_API_KEY: ''
+      OPENROUTER_API_KEY: ''
+      OLLAMA_API_KEY: ''
+      CODEX_API_KEY: ''
+      GH_TOKEN: ''
+      GITHUB_TOKEN: ''
+      VERCEL_TOKEN: ''
+      DO_NOT_TRACK: '1'
+    steps:
+      - name: Checkout public Hub patch only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Checkout pinned public upstream RuFlo v3.63.6 (sparse)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: ruvnet/ruflo
+          ref: v3.63.6
+          path: upstream
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            v3/@claude-flow/shared/src/core/config/**
+            v3/@claude-flow/shared/__tests__/**
+            v3/@claude-flow/security/src/input-validator.ts
+            v3/@claude-flow/security/__tests__/input-validator.test.ts
+      - name: Node.js 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Check and apply upstream patch in disposable checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C upstream apply --check "$GITHUB_WORKSPACE/upstream-patches/ruflo-zod-cross-version-v3.63.6.patch"
+          git -C upstream apply "$GITHUB_WORKSPACE/upstream-patches/ruflo-zod-cross-version-v3.63.6.patch"
+          git -C upstream diff --check
+      - name: Install only test runtime for selected Zod version, no lifecycle scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/zod-test"
+          npm install --prefix "$RUNNER_TEMP/zod-test" --save-exact --ignore-scripts --no-audit --no-fund \
+            "zod@${{ matrix.zod }}" "vitest@3.2.4" "tsx@4.20.6" "typescript@5.9.3" "@types/node@22.18.6"
+          ln -s "$RUNNER_TEMP/zod-test/node_modules" upstream/node_modules
+          node -p 'require(process.env.RUNNER_TEMP+"/zod-test/node_modules/zod/package.json").version'
+      - name: Run pinned upstream negative-input validation tests with chosen Zod
+        shell: bash
+        working-directory: upstream
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/zod-test/node_modules/.bin/vitest" run \
+            v3/@claude-flow/shared/__tests__/zod-cross-version.test.ts \
+            v3/@claude-flow/security/__tests__/input-validator.test.ts \
+            --reporter=dot
+      - name: Compile changed TypeScript validators against selected Zod
+        shell: bash
+        working-directory: upstream
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/zod-test/node_modules/.bin/tsc" --noEmit --skipLibCheck \
+            --target es2022 --module nodenext --moduleResolution nodenext \
+            --types node \
+            v3/@claude-flow/shared/src/core/config/validator.ts \
+            v3/@claude-flow/security/src/input-validator.ts
+      - name: Verify Hub tracked files were not modified
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code
