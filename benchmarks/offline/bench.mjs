@@ -5,11 +5,18 @@ import {appendFileSync,existsSync,mkdirSync,mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {benchmarkFixture} from './repair.mjs';
+import {bookingFixture} from './proffera-booking/fixture.mjs';
 
 const arm=process.argv[2];
+const scenario=process.argv[3]||'basic';
+if(!['basic','booking'].includes(scenario))throw Error('Unknown synthetic scenario');
+const runFixture=scenario==='booking'?bookingFixture:benchmarkFixture;
+const expectedRef=scenario==='booking'
+  ?'refs/heads/work/proffera-booking-offline-20261103'
+  :'refs/heads/work/ruflo-offline-benchmark-20261025';
 if(!['direct','ruflo'].includes(arm))throw Error('Choose direct or ruflo');
 if(process.env.CI==='true'&&(process.env.GITHUB_REPOSITORY!=='ibboabdoli-ai/ruflo-hub'
-  ||process.env.GITHUB_REF!=='refs/heads/work/ruflo-offline-benchmark-20261025')){
+  ||process.env.GITHUB_REF!==expectedRef)){ 
   throw Error('Benchmark CI is restricted to isolated RuFlo Hub lab branch');
 }
 const duration=start=>Number((Number(process.hrtime.bigint()-start)/1e6).toFixed(3));
@@ -18,21 +25,22 @@ const finish=(result)=>{
   if(process.env.GITHUB_STEP_SUMMARY){
     const b=result;
     appendFileSync(process.env.GITHUB_STEP_SUMMARY,[
-      '## Offline RuFlo benchmark ('+arm+')','',
+      '## Offline RuFlo benchmark ('+arm+', '+scenario+' scenario)','',
       '| Measurement | Observation |','|---|---|',
       '| Fixture defects found | '+b.baselineFailures+' |',
       '| Static reference tests passed | '+b.passesAfter+'/'+b.fixtureCases+' |',
       '| Static patch + tests | '+b.repairAndTestMs+' ms |',
       '| End-to-end benchmark arm | '+b.totalMs+' ms |',
       '| Real RuFlo native task completions | '+b.nativeTasksCompleted+' |',
-      '| Model/API calls | 0 |','',
+      '| Model/API calls | 0 |',
+      '| Proffera production touched | No |','',
       '**Not Codex vs RuFlo speed/quality evidence.** Both paths apply one identical pre-reviewed reference patch; the RuFlo arm only tests real no-key task bookkeeping and overhead. No autonomous model inference, no code generation.'
     ].join('\n')+'\n');
   }
 };
 if(arm==='direct'){
   const start=process.hrtime.bigint();
-  const m=await benchmarkFixture();
+  const m=await runFixture();
   finish({arm, ...m,totalMs:duration(start),nativeTasksCompleted:0,
     comparisonScope:'static fixture path, without any model'});
 }else{
@@ -112,21 +120,27 @@ if(arm==='direct'){
     }
     for(let i=0;i<roles.length;i++){
       const data=await invoke('task_create',{type:['review','fix','verify'][i],
-        description:'Synthetic reference-only '+roles[i]+' fixture task',
+        description:(scenario==='booking'
+          ?'Synthetic 180-to-210 minute booking availability '+roles[i]+' review only'
+          :'Synthetic reference-only '+roles[i]+' fixture task'),
         priority:'low',tags:['offline-benchmark','no-model']});
       const taskId=idOf(data,'task');
       await invoke('task_assign',{taskId,agentIds:[agents[i]]});
       tasks.push(taskId);
     }
     const results=[];
-    const fixedOutputs=[
+    const fixedOutputs=scenario==='booking' ? [
+      'FINDING: new 210-minute service can expose invalid end-of-day slots if old 180-minute duration is reused.',
+      'PATCH: copy the pre-reviewed synthetic booking reference unchanged, not model-generated.',
+      'CHECK: compare the same twelve fixed booking requirements in disposable scratch only.'
+    ] : [
       'FINDING: synthetic empty average and unnormalized identifier cases fail.',
       'PATCH: apply the pre-reviewed reference fixture unchanged, not model-generated.',
       'CHECK: compare identical seven deterministic cases in disposable scratch directory.'
     ];
     let m;
     for(let i=0;i<3;i++){
-      if(i===1)m=await benchmarkFixture();
+      if(i===1)m=await runFixture();
       const answer=fixedOutputs[i];
       await invoke('task_complete',{taskId:tasks[i],result:{output:answer}});
       const state=await invoke('task_status',{taskId:tasks[i]});
