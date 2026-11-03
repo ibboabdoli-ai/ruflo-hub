@@ -50,8 +50,14 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/ruflo-official"
-          npm install --prefix "$RUNNER_TEMP/ruflo-official" --no-save --omit=optional --ignore-scripts --no-audit --no-fund "ruflo@$RUFLO_CANDIDATE"
-          test -f "$RUNNER_TEMP/ruflo-official/node_modules/ruflo/package.json"
+          cd "$RUNNER_TEMP/ruflo-official"
+          printf '{"name":"ruflo-official-isolated-gate","private":true,"version":"0.0.0","dependencies":{"ruflo":"%s"}}\n' "$RUFLO_CANDIDATE" > package.json
+          # Candidate research only: temp lock is created for reproducible npm audit.
+          # It is NOT a reviewed, committed integrity-pinned production lockfile.
+          npm install --package-lock-only --omit=optional --ignore-scripts --no-audit --no-fund
+          npm ci --omit=optional --ignore-scripts --no-audit --no-fund
+          test -f node_modules/ruflo/package.json
+          test -f package-lock.json
       - name: Check runtime Zod and security negative paths - fail closed
         shell: bash
         env:
