@@ -6,6 +6,7 @@ on:
     paths:
       - benchmarks/offline/bench.mjs
       - benchmarks/offline/proffera-booking/**
+      - benchmarks/offline/deps/package.json
       - tests/proffera-booking-offline.test.mjs
       - .github/workflows/ruflo-proffera-booking-zero-key.yml
   workflow_dispatch:
