@@ -2,7 +2,7 @@ name: RuFlo official release readiness - isolated security gate
 on:
   push:
     branches:
-      - work/ruflo-release-readiness-20261103
+      - work/ruflo-official-3712-isolated-20261104
     paths:
       - scripts/ruflo-release-readiness.mjs
       - .github/workflows/ruflo-official-release-readiness.yml
@@ -11,12 +11,12 @@ permissions:
   contents: read
 jobs:
   verify-official-release:
-    if: github.repository == 'ibboabdoli-ai/ruflo-hub' && github.ref == 'refs/heads/work/ruflo-release-readiness-20261103'
+    if: github.repository == 'ibboabdoli-ai/ruflo-hub' && github.ref == 'refs/heads/work/ruflo-official-3712-isolated-20261104'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
       CI: 'true'
-      RUFLO_CANDIDATE: '3.71.0'
+      RUFLO_CANDIDATE: '3.71.2'
       OPENAI_API_KEY: ''
       ANTHROPIC_API_KEY: ''
       OPENROUTER_API_KEY: ''
@@ -45,6 +45,16 @@ jobs:
           node --check scripts/ruflo-release-readiness.mjs
           npm run validate
           npm test
+      - name: Verify independent npm publication metadata (read-only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          for pkg in @claude-flow/cli-core @claude-flow/shared @claude-flow/security ruflo; do
+            echo "NPM_DIST_TAG_QUERY package=$pkg"
+            npm view "$pkg" dist-tags --json
+            echo "NPM_PACKAGE_VERSION_QUERY package=$pkg"
+            npm view "$pkg" version --json
+          done
       - name: Install official published candidate in runner temp only
         shell: bash
         run: |
