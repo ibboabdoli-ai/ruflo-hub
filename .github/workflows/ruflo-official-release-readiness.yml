@@ -2,7 +2,7 @@ name: RuFlo official release readiness - isolated security gate
 on:
   push:
     branches:
-      - work/ruflo-official-3714-isolated-20261105
+      - work/ruflo-official-3722-isolated-20261106
     paths:
       - scripts/ruflo-release-readiness.mjs
       - .github/workflows/ruflo-official-release-readiness.yml
@@ -11,12 +11,12 @@ permissions:
   contents: read
 jobs:
   verify-official-release:
-    if: github.repository == 'ibboabdoli-ai/ruflo-hub' && github.ref == 'refs/heads/work/ruflo-official-3714-isolated-20261105'
+    if: github.repository == 'ibboabdoli-ai/ruflo-hub' && github.ref == 'refs/heads/work/ruflo-official-3722-isolated-20261106'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
       CI: 'true'
-      RUFLO_CANDIDATE: '3.71.4'
+      RUFLO_CANDIDATE: '3.72.2'
       OPENAI_API_KEY: ''
       ANTHROPIC_API_KEY: ''
       OPENROUTER_API_KEY: ''
